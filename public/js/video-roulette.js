@@ -305,7 +305,6 @@ function RouletteView() {
       pcRef.current = null;
     }
     remoteStreamRef.current = null;
-    if (remotePVRef.current) { remotePVRef.current.cleanup(); remotePVRef.current = null; }
     setPartnerName('');
     setStatus('waiting');
     if (ctx.socket) ctx.socket.emit('roulette_next');
