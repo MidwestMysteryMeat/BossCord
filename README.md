@@ -119,3 +119,9 @@ This repo intentionally contains **no icon art**. The images under
 `public/icons/` are purchased packs licensed to the project owner only and
 are stripped from version control (see `public/icons/ASSETS_PLACEHOLDER.md`).
 The app expects them at their original paths; production has its own copies.
+
+---
+
+<sub>Support development — <a href="https://ko-fi.com/midwestmysterymeat">Ko-fi</a></sub>
+
+<img src=".github/donation-qrcode.png" width="120" alt="Donation QR code">
