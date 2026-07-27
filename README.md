@@ -123,5 +123,3 @@ The app expects them at their original paths; production has its own copies.
 ---
 
 <sub>Support development — <a href="https://ko-fi.com/midwestmysterymeat">Ko-fi</a></sub>
-
-<img src=".github/donation-qrcode.png" width="120" alt="Donation QR code">
