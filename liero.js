@@ -469,14 +469,14 @@ class LieroGame {
           if (p.blockExplosionDamage && p.blockExplosionDamage > 0) {
             var beCx = p.x + PLAYER_W / 2;
             var beCy = p.y + PLAYER_H / 2;
-            var beDeltas = game.terrain.destroyCircle(beCx, beCy, p.blockExplosionRadius || 20);
-            for (var bed = 0; bed < beDeltas.length; bed++) game.pendingEvents.terrainDeltas.push(beDeltas[bed]);
-            for (var [bePid, beP] of game.players) {
+            var beDeltas = this.terrain.destroyCircle(beCx, beCy, p.blockExplosionRadius || 20);
+            for (var bed = 0; bed < beDeltas.length; bed++) this.pendingEvents.terrainDeltas.push(beDeltas[bed]);
+            for (var [bePid, beP] of this.players) {
               if (bePid === p.id || !beP.alive) continue;
               var beDx = (beP.x + PLAYER_W / 2) - beCx;
               var beDy = (beP.y + PLAYER_H / 2) - beCy;
               if (Math.sqrt(beDx * beDx + beDy * beDy) < (p.blockExplosionRadius || 20) + PLAYER_W) {
-                damagePlayer(beP, p.blockExplosionDamage, p, 'explosive_shield', game);
+                damagePlayer(beP, p.blockExplosionDamage, p, 'explosive_shield', this);
               }
             }
             p.blockExplosionDamage = 0;
@@ -499,8 +499,8 @@ class LieroGame {
           p.hp = Math.min(p.maxHp, p.hp + (buff.healPerTick || 2));
         }
         if (buffId === 'poison' && buff.remaining > 0 && buff.remaining % 3 === 0) {
-          var poisonAttacker = game.players.get(buff.ownerId);
-          damagePlayer(p, buff.poisonDamage || 3, poisonAttacker || null, 'poison', game);
+          var poisonAttacker = this.players.get(buff.ownerId);
+          damagePlayer(p, buff.poisonDamage || 3, poisonAttacker || null, 'poison', this);
         }
         if (buff.remaining <= 0) {
           delete p.buffs[buffId];
