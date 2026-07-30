@@ -66,6 +66,11 @@ class AuctionHouse {
         hp: itemInfo.hp || null,
         rarityColor: itemInfo.rarityColor || '#9e9e9e',
         coinValue: itemInfo.coinValue || itemInfo.sellValue || 0,
+        modifier: itemInfo.modifier || null,
+        modifierInfo: itemInfo.modifierInfo || null,
+        serial: itemInfo.serial || null,
+        rolledStats: itemInfo.rolledStats || null,
+        shiny: !!itemInfo.shiny,
       },
       price,
       listedAt: Date.now(),
@@ -96,7 +101,8 @@ class AuctionHouse {
     if (!listing) return { error: 'Listing not found' };
     if (listing.sellerKey === buyerKey) return { error: 'Cannot buy your own listing' };
     if (Date.now() > listing.expiresAt) {
-      this.listings.delete(listingId);
+      // Leave it in the map: cleanupExpired() is responsible for removing the
+      // listing and returning the asset to its seller.
       return { error: 'Listing expired' };
     }
 
@@ -128,7 +134,8 @@ class AuctionHouse {
     for (const [, listing] of this.listings) {
       // Remove expired
       if (now > listing.expiresAt) {
-        this.listings.delete(listing.id);
+        // The scheduled cleanup owns removal because its caller returns the
+        // asset. Deleting here would silently destroy the seller's item.
         continue;
       }
 

@@ -18,11 +18,13 @@ BossCord is real-time chat with public rooms and private servers (text/voice/vid
 
 ## Status
 
-**Feature-rich, thin on tests.** All 95 server/client JS files are syntax-clean, the chess timer test passes, and the server smoke-boots cleanly. Rough edges:
+**Feature-rich, with an initial automated gate.** The server/client JavaScript
+passes a pinned correctness-only ESLint gate, five server regressions pass, and
+the server smoke-boots cleanly. Rough edges:
 
 - The **TCG trade + challenge flow is fully implemented server-side with no client UI** (dormant feature)
 - No message editing/deletion, image attachments, or replies
-- Essentially no automated test suite (one ad-hoc chess script)
+- Automated coverage is still narrow relative to the chat/auth/economy surface
 
 ## How to run
 
@@ -35,6 +37,17 @@ ACCOUNT_SECRET=<any-random-string> node server.js   # required to boot
 ```
 
 The React client is served statically from `public/` and uses `React.createElement` directly — **no build step, no bundler**. Runtime/account data lives under `data/` (gitignored). Server secrets load from environment variables (e.g. `ACCOUNT_SECRET`, `TENOR_KEY`); nothing sensitive is committed. Deployment tooling is not included in this repo.
+
+## Verification
+
+```
+npm ci
+npm run verify       # pinned eslint correctness gate + 5 server regressions
+```
+
+The regressions cover game-tick crash cases and marketplace asset integrity,
+including preservation of unique modifiers/serials/card rolls and safe recovery
+of expired listings. The lint gate does not enforce formatting.
 
 ## Screenshots
 
@@ -80,7 +93,11 @@ part of its identity, not an optional layer.
 
 ## Known issues / roadmap
 
-See [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md). Priority: ship the dormant TCG trade UI + seed a jest/CI test suite → message edit/delete + replies → image attachments (ephemeral, purge on wipe) → daily leaderboards → push notifications. Deliberately *not* planned: persistent message history, webhooks/bots, read receipts (they contradict the "no traces" identity).
+See [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md). Priority: ship the dormant
+TCG trade UI + expand the built-in Node test suite → message edit/delete +
+replies → image attachments (ephemeral, purge on wipe) → daily leaderboards →
+push notifications. Deliberately *not* planned: persistent message history,
+webhooks/bots, read receipts (they contradict the "no traces" identity).
 
 ## AI development note
 

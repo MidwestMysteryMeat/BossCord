@@ -153,12 +153,11 @@ class Game {
 
   /** Remove one bot to make room for a human player */
   removeOneBot() {
-    for (const botId of this.bots.keys()) {
-      this.players.delete(botId);
-      this.bots.delete(botId);
-      return true;
-    }
-    return false;
+    const firstBot = this.bots.keys().next();
+    if (firstBot.done) return false;
+    this.players.delete(firstBot.value);
+    this.bots.delete(firstBot.value);
+    return true;
   }
 
   removeBots() {
