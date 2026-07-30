@@ -38,9 +38,9 @@ the filename and path** — no code change, no rebuild (there is no build step).
 
 | path/pattern | type | format | dimensions | used for | required/optional | fallback behavior |
 |---|---|---|---|---|---|---|
-| `public/icons/cards/T_4ColorCards_Deck1_LowRes_{Spades,Hearts,Diamonds,Clubs}{2..10,J,Q,K,A}_Diffuse.PNG` | playing cards | PNG RGBA | **242×348** | blackjack/poker faces; path built by concatenation at `public/js/games-cards.js:270-277`, rendered `:283-296` | **required for card games** — 52 faces | broken-image icon; no `onerror` handler |
+| `public/icons/cards/T_4ColorCards_Deck1_LowRes_{Spades,Hearts,Diamonds,Clubs}{2..10,J,Q,K,A}_Diffuse.PNG` | playing cards | PNG RGBA | **242×348** | blackjack/poker faces; path built by concatenation at `public/js/games-cards.js:270-277`, rendered `:283-296` | **required for card games** — 52 faces | broken-image icon — these are not wired through `FallbackImg` (see §2b) |
 | `public/icons/cards/card_back.PNG` | playing card | PNG RGBA | 242×348 | face-down + unknown-suit fallback (`games-cards.js:271`, `:274`) | **required for card games** | broken-image icon |
-| `public/icons/characters/{hm,hw,elf,gnome}_*.png` | avatar portraits | PNG RGBA | 256×256 | the 60 selectable profile portraits, catalog at `loot.js:664-760`, served `handlers/inventory.js:190` | **required** — see the avatar warning in §2 | initial-circle CSS fallback exists but is unreachable |
+| `public/icons/characters/{hm,hw,elf,gnome}_*.png` | avatar portraits | PNG RGBA | 256×256 | the 60 selectable profile portraits, catalog at `loot.js`, served `handlers/inventory.js` | **optional** — see §2a | coloured initial circle; the server only auto-assigns portraits whose file exists |
 | `public/icons/items/*.PNG` | item icons | PNG RGBA | 256×256 | inventory, casino/lootbox/scratch art (`public/js/games-casino.js`, 49 refs) | required for those screens | broken-image icon |
 | `public/icons/loot/*.PNG` | loot/currency icons | PNG RGBA | 256×256 | chests, bags, keys, coins; heaviest-referenced set — `LootCoin_06.PNG` is the **chips currency icon** used in profile, hub, and TCG chrome (×6 refs) | required | broken-image icon |
 | `public/icons/weapons/*.PNG` | weapon icons | PNG RGBA | 256×256 | loot tables at `loot.js:192-226` | required | broken-image icon |
@@ -71,44 +71,62 @@ do not need to replace those.
 
 ---
 
-## 2. Two things that will bite you, in priority order
+## 2. Avatars and card art are art-optional (fixed) — everything else is not
 
-### (a) Every user's avatar is a broken image — fix this first
+### (a) Avatars: fixed, no action needed
 
-`socket.js:368-376` assigns a **random licensed portrait file to every anonymous user**:
+Previously `socket.js` assigned a random licensed portrait path to **every** anonymous
+user, so `user.avatar` was always truthy and the app's own initial-circle fallback was
+unreachable — on a fresh clone every user in every room rendered a broken image.
 
-```js
-// Assign a random character portrait image for anonymous users
-if (loot.PROFILE_PORTRAITS && loot.PROFILE_PORTRAITS.length > 0) {
-  var randomPortrait = loot.PROFILE_PORTRAITS[Math.floor(Math.random() * loot.PROFILE_PORTRAITS.length)];
-  user.avatar = randomPortrait.img || null;
+The server now only ever hands out a portrait it can prove exists. `loot.js` resolves the
+catalogue against the filesystem once at boot and exposes `AVAILABLE_PROFILE_PORTRAITS`
+plus `rollProfilePortrait()`, which returns `null` when there is nothing safe to give
+out. `socket.js` assigns whatever that returns, so on a clone with no art `user.avatar`
+stays `null` and the coloured initial circle renders. The avatar picker
+(`handlers/inventory.js`, `portraits_get`) lists the same filtered set rather than a grid
+of broken images.
+
+The boot log states which mode you are in:
+
+```
+[assets] no profile portrait art found under public/icons/characters/ — avatars fall back to coloured initials (see public/icons/ASSETS_PLACEHOLDER.md)
+[assets] profile portraits available: 60/60 — auto-assign ON
 ```
 
-Because `user.avatar` is therefore **always truthy**, the app's perfectly good graceful
-fallback is **unreachable**. That fallback is a generated coloured circle with the
-user's first initial — not a file, not a data URI, not an identicon:
+Set `AVATAR_AUTOASSIGN=off` to stop auto-assigning portraits even when the art *is*
+present (the picker still works); the log then reads `auto-assign OFF`.
 
-- `public/js/chat.js:854-861` — own-user footer, 32 px circle on `ctx.user.color`
-- `public/js/chat.js:2913-2921` — message rows, 40 px circle
-- `public/js/chat.js:3332` — member list
-- `public/js/chat.js:1939-1947` — voice placeholder
-- `public/js/cords.js:338-345` — social feed
-
-On a fresh clone, *every user in every room* renders a broken-image icon. **Deleting or
-guarding the `socket.js:368` auto-assign makes avatars fully art-optional** — the CSS
-initial-circle takes over and the app looks intentional with zero images supplied. That
-is a one-line change and by far the highest-leverage fix for a self-hoster.
+The fallback itself is a generated coloured circle with the user's first initial — not a
+file, not a data URI, not an identicon. Render sites: `public/js/chat.js` (own-user
+footer 32 px, message rows 40 px, member list), `public/js/cords.js` (social feed),
+`public/js/landing.js` (28 px and 40 px headers), `public/js/leaderboard.js`,
+`public/js/games-cards.js` (`renderPlayerAvatar`), `public/js/profile.js` (profile
+header, which degrades to 👤).
 
 Note there is **no avatar upload** anywhere in the app — users pick from the fixed
-60-portrait list (`loot.js:664`), and only the *path string* is persisted
-(`handlers/inventory.js:209-210` sets `acc.avatar` / `acc.avatarId`).
+60-portrait list (`loot.js`), and only the *path string* is persisted
+(`handlers/inventory.js` sets `acc.avatar` / `acc.avatarId`).
 
-### (b) There is no `onerror` handler anywhere in the client
+### (b) `FallbackImg` handles a missing file where it is wired up
 
-Verified: zero `onerror` hits across `public/js/`. Every missing image renders the
-browser's broken-image glyph rather than degrading. Adding a single `onError` on the
-shared `<img>` render paths would convert the whole art gap from "looks broken" to
-"looks minimal."
+`public/js/ui-common.js` defines `FallbackImg`, a drop-in `<img>` wrapper that renders
+the caller's `fallback` element when `src` is null/empty **or** when the image fails to
+load, so a 404 degrades instead of showing the browser's broken-image glyph. It retries
+when `src` changes, and forwards any other prop to the `<img>`.
+
+```js
+React.createElement(FallbackImg, {
+  src: user.avatar,                      // may be null or a missing file
+  style: { width: '32px', height: '32px', borderRadius: '50%' },
+  fallback: React.createElement('div', { style: circleStyle }, 'A')
+})
+```
+
+It is wired into every avatar render site and every TCG card-art site (§3). It is **not**
+wired into the item/loot/weapon/book/playing-card icons, so those still show the
+browser's broken-image glyph when the art is absent — supply those files, or pass them
+through `FallbackImg` with an emoji fallback the same way.
 
 ---
 
@@ -133,16 +151,17 @@ is passed to the client verbatim at `tcg.js:319`, `:373`, `:495`, `:1168`, and
 
 | path/pattern | type | format | dimensions | used for | required/optional | fallback behavior |
 |---|---|---|---|---|---|---|
-| `public/icons/characters/Monsters/*.PNG` (50 refs) | TCG card art | PNG RGBA | 256×256 to match the other character art | monster cards | optional | `🐉` emoji **only if `img` is null** — otherwise broken image |
+| `public/icons/characters/Monsters/*.PNG` (50 refs) | TCG card art | PNG RGBA | 256×256 to match the other character art | monster cards | optional | `🐉` emoji |
 | `public/icons/characters/Monsters/Undead/*.PNG` (30 refs) | TCG card art | PNG RGBA | 256×256 | undead cards | optional | as above |
 | `public/icons/characters/Monsters/Vampires/{Female,Male} Vampire/*.PNG` (2 each) | TCG card art | PNG RGBA | 256×256 | vampire cards | optional | as above |
 
-The client *does* have a dragon-emoji fallback — `public/js/games-tcg.js:213`, `:559`,
-`:947` render `card.img ? <img …> : <div style={{fontSize:'40px'}}>🐉</div>`. But it
-**only fires when `img` is null/undefined**, and the server always populates it. So
-today you get a broken image, not the dragon. **Either supply the art, or null out the
-`img` fields in `tcg.js` to get the intended emoji cards for free.** The
-active-battle card at `games-tcg.js:1022-1025` has no fallback branch at all.
+The dragon-emoji fallback used to fire **only when `img` was null**, which never
+happened — the server always populates it — so every card showed a broken image instead.
+All four card-art render sites in `public/js/games-tcg.js` (collection, pack-open,
+deck-builder, and the active-battle card, which previously had no fallback branch at all)
+plus the three in `public/js/profile.js` now go through `FallbackImg` with `🐉` as the
+fallback, so a missing file shows the dragon. **The TCG is fully playable with no card
+art supplied** — supply the files only if you want illustrated cards.
 
 Pack and key artwork is separate and *is* present on disk (`/icons/loot/Loot_*_bag.PNG`,
 `Loot_*_key.PNG`, `LootCoin_06.PNG`), referenced at `games-tcg.js:206`, `:259`, `:284`,

@@ -198,19 +198,17 @@ function TCGPackView() {
                   borderRadius: '4px', zIndex: 2, letterSpacing: '0.5px', textTransform: 'uppercase'
                 }
               }, card.rarity === 'godly' ? 'GODLY' : card.rarity === 'secret' ? 'SECRET' : card.rarity === 'mythic' ? 'MYTHIC' : 'HOLO') : null,
-              // Card image
-              card.img
-                ? React.createElement('div', {
-                    style: { width: '100%', height: '100px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }
-                  },
-                    React.createElement('img', {
-                      src: card.img,
-                      style: { width: '100%', height: '100%', objectFit: 'cover' }
-                    })
-                  )
-                : React.createElement('div', {
-                    style: { width: '100%', height: '100px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }
-                  }, '\u{1F409}'),
+              // Card image — art is not bundled with the repo, so a missing file
+              // degrades to the dragon emoji rather than a broken-image glyph.
+              React.createElement('div', {
+                style: { width: '100%', height: '100px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontSize: '40px' }
+              },
+                React.createElement(FallbackImg, {
+                  src: card.img,
+                  style: { width: '100%', height: '100%', objectFit: 'cover' },
+                  fallback: '\u{1F409}'
+                })
+              ),
               // Card info
               React.createElement('div', { style: { padding: '10px' } },
                 React.createElement('div', {
@@ -544,19 +542,16 @@ function TCGCollectionView() {
                   borderRadius: '4px', zIndex: 2, letterSpacing: '0.5px'
                 }
               }, 'SHINY') : null,
-              // Card image
-              card.img
-                ? React.createElement('div', {
-                    style: { width: '100%', height: '100px', background: '#18181b', overflow: 'hidden' }
-                  },
-                    React.createElement('img', {
-                      src: card.img,
-                      style: { width: '100%', height: '100%', objectFit: 'cover' }
-                    })
-                  )
-                : React.createElement('div', {
-                    style: { width: '100%', height: '100px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }
-                  }, '\u{1F409}'),
+              // Card image (see FallbackImg — art files may be absent)
+              React.createElement('div', {
+                style: { width: '100%', height: '100px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontSize: '40px' }
+              },
+                React.createElement(FallbackImg, {
+                  src: card.img,
+                  style: { width: '100%', height: '100%', objectFit: 'cover' },
+                  fallback: '\u{1F409}'
+                })
+              ),
               // Card info
               React.createElement('div', { style: { padding: '10px' } },
                 React.createElement('div', {
@@ -938,13 +933,13 @@ function TCGBattleView() {
               isSelected ? React.createElement('div', {
                 style: { background: '#57f287', color: '#1c1c1e', fontSize: '10px', fontWeight: 700, padding: '2px' }
               }, 'SELECTED') : null,
-              card.img
-                ? React.createElement('div', {
-                    style: { width: '100%', height: '80px', background: '#18181b', overflow: 'hidden' }
-                  }, React.createElement('img', { src: card.img, style: { width: '100%', height: '100%', objectFit: 'cover' } }))
-                : React.createElement('div', {
-                    style: { width: '100%', height: '80px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }
-                  }, '\u{1F409}'),
+              React.createElement('div', {
+                style: { width: '100%', height: '80px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontSize: '32px' }
+              }, React.createElement(FallbackImg, {
+                src: card.img,
+                style: { width: '100%', height: '100%', objectFit: 'cover' },
+                fallback: '\u{1F409}'
+              })),
               React.createElement('div', { style: { padding: '8px' } },
                 React.createElement('div', { style: { color: '#dcddde', fontSize: '12px', fontWeight: 700, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, card.name || 'Unknown'),
                 React.createElement('div', { style: { color: rarityColor, fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '3px' } }, card.rarity || ''),
@@ -1019,13 +1014,13 @@ function TCGBattleView() {
         }, 'SHINY') : null,
         React.createElement('div', { style: { position: 'absolute', top: '4px', left: '4px', background: '#4e5058', color: '#dcddde', fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px' } },
           isMe ? 'Slot ' + (slotIdx + 1) : (isMyTurn ? 'Click to attack' : 'Slot ' + (slotIdx + 1))),
-        ac && ac.img
-          ? React.createElement('div', {
-              style: { width: '80px', height: '80px', margin: '16px auto 6px', borderRadius: '6px', overflow: 'hidden', background: '#18181b' }
-            }, React.createElement('img', { src: ac.img, style: { width: '100%', height: '100%', objectFit: 'cover' } }))
-          : React.createElement('div', {
-              style: { width: '80px', height: '80px', margin: '16px auto 6px', borderRadius: '6px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }
-            }, '\u{1F409}'),
+        React.createElement('div', {
+          style: { width: '80px', height: '80px', margin: '16px auto 6px', borderRadius: '6px', overflow: 'hidden', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }
+        }, React.createElement(FallbackImg, {
+          src: ac && ac.img,
+          style: { width: '100%', height: '100%', objectFit: 'cover' },
+          fallback: '\u{1F409}'
+        })),
         React.createElement('div', { style: { color: '#dcddde', fontSize: '12px', fontWeight: 700, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, ac ? ac.name : '?'),
         React.createElement('div', { style: { color: '#949ba4', fontSize: '10px', fontStyle: 'italic', marginBottom: '3px' } }, ac ? ac.type : ''),
         ac ? React.createElement('div', { style: { display: 'flex', justifyContent: 'center', gap: '6px', fontSize: '10px', marginBottom: '4px' } },

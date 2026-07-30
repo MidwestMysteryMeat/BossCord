@@ -728,6 +728,54 @@ const PROFILE_PORTRAITS = [
   { id: 'gnome_m3', name: 'Gnome Elder', icon: '\u{1F9D9}', img: '/icons/characters/gnome_m3.png' },
 ];
 
+// ─── Which portrait art is actually on disk ───
+// The art under public/icons/ is owner-licensed and stripped from version control,
+// so a fresh clone has none of these PNGs. Handing out an avatar whose file is absent
+// made user.avatar always truthy and left every user rendering as a broken image, so
+// the app now only offers portraits it can prove exist. When none exist, avatars stay
+// null and the client falls back to its coloured initial circle.
+//
+// AVATAR_AUTOASSIGN=off additionally stops new users from being given a portrait even
+// when the art is present; the avatar picker still works.
+const PORTRAIT_AUTOASSIGN =
+  String(process.env.AVATAR_AUTOASSIGN || '').toLowerCase() !== 'off';
+
+function portraitArtExists(portrait) {
+  if (!portrait || typeof portrait.img !== 'string') return false;
+  try {
+    const rel = portrait.img.replace(/^\/+/, '');
+    return fs.existsSync(path.join(__dirname, 'public', rel));
+  } catch (err) {
+    return false;
+  }
+}
+
+// Resolved once at boot: the icon set does not change while the server runs.
+const AVAILABLE_PROFILE_PORTRAITS = PROFILE_PORTRAITS.filter(portraitArtExists);
+
+if (AVAILABLE_PROFILE_PORTRAITS.length === 0) {
+  console.log(
+    '[assets] no profile portrait art found under public/icons/characters/ — ' +
+    'avatars fall back to coloured initials (see public/icons/ASSETS_PLACEHOLDER.md)'
+  );
+} else {
+  console.log(
+    '[assets] profile portraits available: ' + AVAILABLE_PROFILE_PORTRAITS.length +
+    '/' + PROFILE_PORTRAITS.length +
+    ' — auto-assign ' + (PORTRAIT_AUTOASSIGN ? 'ON' : 'OFF (AVATAR_AUTOASSIGN=off)')
+  );
+}
+
+// Pick a portrait for a brand-new anonymous user, or null when there is nothing safe
+// to hand out. Callers must treat null as "no avatar", not as an error.
+function rollProfilePortrait() {
+  if (!PORTRAIT_AUTOASSIGN) return null;
+  if (AVAILABLE_PROFILE_PORTRAITS.length === 0) return null;
+  return AVAILABLE_PROFILE_PORTRAITS[
+    Math.floor(Math.random() * AVAILABLE_PROFILE_PORTRAITS.length)
+  ];
+}
+
 module.exports = {
   RARITIES,
   MODIFIERS,
@@ -758,5 +806,7 @@ module.exports = {
   rollGuaranteedKey,
   openSpecialCrate,
   PROFILE_PORTRAITS,
+  AVAILABLE_PROFILE_PORTRAITS,
+  rollProfilePortrait,
   flushSerialCounter,
 };

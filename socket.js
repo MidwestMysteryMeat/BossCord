@@ -365,9 +365,12 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
         socketAccountMap.set(socket.id, tempAccount.key);
         linkedAccount = tempAccount;
       }
-      // Assign a random character portrait image for anonymous users
-      if (loot.PROFILE_PORTRAITS && loot.PROFILE_PORTRAITS.length > 0) {
-        var randomPortrait = loot.PROFILE_PORTRAITS[Math.floor(Math.random() * loot.PROFILE_PORTRAITS.length)];
+      // Assign a random character portrait for anonymous users, but only one whose
+      // art is actually on disk. Portrait PNGs are owner-licensed and not in the repo,
+      // so on a fresh clone this returns null and user.avatar stays null — which is
+      // what the client's coloured-initial fallback exists for.
+      var randomPortrait = loot.rollProfilePortrait();
+      if (randomPortrait) {
         user.avatar = randomPortrait.img || null;
         // Also save to the temp account so profile_get returns it
         if (linkedAccount && user.avatar) {

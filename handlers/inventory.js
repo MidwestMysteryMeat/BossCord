@@ -187,7 +187,9 @@ module.exports = {
     socket.on('portraits_get', () => {
       try {
         if (!checkEventRate(socket, 'portraits_get', 10, 60000)) return;
-        socket.emit('portraits_list', { portraits: loot.PROFILE_PORTRAITS });
+        // Only offer portraits whose art is present — the picker would otherwise
+        // show a grid of broken images on a clone without the licensed art packs.
+        socket.emit('portraits_list', { portraits: loot.AVAILABLE_PROFILE_PORTRAITS });
       } catch (err) {
         console.error('[portraits_get] Error:', err.message);
       }

@@ -331,25 +331,11 @@ function CardGamesView() {
   // Shows a circular avatar image or colored-initial fallback
   function renderPlayerAvatar(pl, size) {
     var sz = size || (isMobile ? 32 : 40);
-    if (pl.avatar) {
-      return React.createElement('img', {
-        src: pl.avatar,
-        alt: pl.name,
-        draggable: false,
-        style: {
-          width: sz + 'px',
-          height: sz + 'px',
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: '2px solid #4e5058',
-          flexShrink: 0
-        }
-      });
-    }
-    // Fallback: colored circle with first initial
+    // Fallback: colored circle with first initial — also used when the portrait
+    // file is absent, since the licensed art is not shipped with the repo.
     var initial = (pl.name && pl.name.length > 0) ? pl.name.charAt(0).toUpperCase() : '?';
     var bgColor = pl.color || '#5865f2';
-    return React.createElement('div', {
+    var initialCircle = React.createElement('div', {
       style: {
         width: sz + 'px',
         height: sz + 'px',
@@ -366,6 +352,20 @@ function CardGamesView() {
         userSelect: 'none'
       }
     }, initial);
+    return React.createElement(FallbackImg, {
+      src: pl.avatar,
+      alt: pl.name,
+      draggable: false,
+      style: {
+        width: sz + 'px',
+        height: sz + 'px',
+        borderRadius: '50%',
+        objectFit: 'cover',
+        border: '2px solid #4e5058',
+        flexShrink: 0
+      },
+      fallback: initialCircle
+    });
   }
 
   // ── If not in a lobby, show lobby browser ──

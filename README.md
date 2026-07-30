@@ -120,6 +120,16 @@ This repo intentionally contains **no icon art**. The images under
 are stripped from version control (see `public/icons/ASSETS_PLACEHOLDER.md`).
 The app expects them at their original paths; production has its own copies.
 
+**A clone with no art is still usable.** Avatars and TCG card art are
+art-optional: the server only auto-assigns a profile portrait whose file it
+actually finds on disk, and the client falls back to a coloured initial circle
+(avatars) or a 🐉 emoji (cards) whenever an image is absent or fails to load.
+The boot log prints an `[assets] profile portraits available: N/M` line so you
+know which mode you are in. Set `AVATAR_AUTOASSIGN=off` to stop handing out
+portraits even when the art is present. Other icon sets (items, loot, weapons,
+books, playing cards) do still need supplying — `ASSETS_NEEDED.md` lists every
+path, size, and fallback.
+
 ---
 
 <sub>Support development — <a href="https://ko-fi.com/midwestmysterymeat">Ko-fi</a></sub>

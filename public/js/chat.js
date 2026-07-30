@@ -843,22 +843,21 @@ function ChannelSidebar({ mobileShow, onToggle }) {
         alignItems: 'center', padding: '0 8px', flexShrink: 0, gap: '8px'
       }
     },
-      ctx.user && ctx.user.avatar
-        ? React.createElement('img', {
-            src: ctx.user.avatar,
-            style: {
-              width: '32px', height: '32px', borderRadius: '50%',
-              objectFit: 'cover', flexShrink: 0
-            }
-          })
-        : React.createElement('div', {
-            style: {
-              width: '32px', height: '32px', borderRadius: '50%',
-              background: ctx.user ? ctx.user.color || '#f0b232' : '#f0b232',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: '14px', color: '#fff', flexShrink: 0
-            }
-          }, ctx.user ? (ctx.user.name || '?')[0].toUpperCase() : '?'),
+      React.createElement(FallbackImg, {
+        src: ctx.user && ctx.user.avatar,
+        style: {
+          width: '32px', height: '32px', borderRadius: '50%',
+          objectFit: 'cover', flexShrink: 0
+        },
+        fallback: React.createElement('div', {
+          style: {
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: ctx.user ? ctx.user.color || '#f0b232' : '#f0b232',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 700, fontSize: '14px', color: '#fff', flexShrink: 0
+          }
+        }, ctx.user ? (ctx.user.name || '?')[0].toUpperCase() : '?')
+      }),
       React.createElement('div', { style: { flex: 1, overflow: 'hidden' } },
         React.createElement('div', {
           style: { fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
@@ -2902,23 +2901,22 @@ function ChatArea({ onToggleChannels }) {
                     marginTop: '17px', position: 'relative'
                   }
                 },
-                  group.authorAvatar
-                    ? React.createElement('img', {
-                        src: group.authorAvatar,
-                        style: {
-                          width: '40px', height: '40px', borderRadius: '50%',
-                          objectFit: 'cover', flexShrink: 0, marginRight: '16px', marginTop: '2px'
-                        }
-                      })
-                    : React.createElement('div', {
-                        style: {
-                          width: '40px', height: '40px', borderRadius: '50%',
-                          background: group.authorColor || '#f0b232',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: 700, fontSize: '18px', color: '#fff',
-                          flexShrink: 0, marginRight: '16px', marginTop: '2px'
-                        }
-                      }, (group.authorName || '?')[0].toUpperCase()),
+                  React.createElement(FallbackImg, {
+                    src: group.authorAvatar,
+                    style: {
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      objectFit: 'cover', flexShrink: 0, marginRight: '16px', marginTop: '2px'
+                    },
+                    fallback: React.createElement('div', {
+                      style: {
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        background: group.authorColor || '#f0b232',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '18px', color: '#fff',
+                        flexShrink: 0, marginRight: '16px', marginTop: '2px'
+                      }
+                    }, (group.authorName || '?')[0].toUpperCase())
+                  }),
                   React.createElement('div', { style: { minWidth: 0, flex: 1 } },
                     replyQuoteEl,
                     React.createElement('div', {
@@ -3324,12 +3322,11 @@ function MemberList({ members, room, onUserClick }) {
             position: 'relative', overflow: 'hidden'
           }
         },
-          member.avatar
-            ? React.createElement('img', {
-                src: member.avatar,
-                style: { width: '100%', height: '100%', objectFit: 'cover' }
-              })
-            : (member.name || '?')[0].toUpperCase(),
+          React.createElement(FallbackImg, {
+            src: member.avatar,
+            style: { width: '100%', height: '100%', objectFit: 'cover' },
+            fallback: (member.name || '?')[0].toUpperCase()
+          }),
           isOwner ? React.createElement('div', {
             style: {
               position: 'absolute', bottom: '-2px', right: '-2px',

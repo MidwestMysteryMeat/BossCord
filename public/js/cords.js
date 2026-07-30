@@ -335,20 +335,19 @@ function CordsTab() {
           React.createElement('div', {
             style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }
           },
-            cord.authorAvatar
-              ? React.createElement('img', {
-                  src: cord.authorAvatar,
-                  style: {
-                    width: '20px', height: '20px', borderRadius: '50%',
-                    objectFit: 'cover', flexShrink: 0
-                  }
-                })
-              : React.createElement('div', {
-                  style: {
-                    width: '8px', height: '8px', borderRadius: '50%',
-                    background: cord.authorColor || '#f0b232', flexShrink: 0
-                  }
-                }),
+            React.createElement(FallbackImg, {
+              src: cord.authorAvatar,
+              style: {
+                width: '20px', height: '20px', borderRadius: '50%',
+                objectFit: 'cover', flexShrink: 0
+              },
+              fallback: React.createElement('div', {
+                style: {
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: cord.authorColor || '#f0b232', flexShrink: 0
+                }
+              })
+            }),
             React.createElement('span', {
               style: { fontWeight: 600, fontSize: '14px', color: '#e8e6e3', cursor: 'pointer' },
               onClick: function(e) { openUserMenu(e, cord.authorName || 'Anonymous', cord.authorTag || '????', cord.authorColor || '#e8e6e3'); }

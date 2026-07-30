@@ -405,13 +405,15 @@ function ProfileView(props) {
                   textAlign: 'center', overflow: 'hidden'
                 }
               },
-                card.img
-                  ? React.createElement('div', {
-                      style: { width: '100%', height: '90px', background: '#18181b', overflow: 'hidden' }
-                    }, React.createElement('img', { src: card.img, style: { width: '100%', height: '100%', objectFit: 'cover' } }))
-                  : React.createElement('div', {
-                      style: { width: '100%', height: '90px', background: '#18181b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }
-                    }, '\u{1F409}'),
+                React.createElement('div', {
+                  style: { width: '100%', height: '90px', background: '#18181b', overflow: 'hidden' }
+                }, React.createElement(FallbackImg, {
+                  src: card.img,
+                  style: { width: '100%', height: '100%', objectFit: 'cover' },
+                  fallback: React.createElement('div', {
+                    style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px' }
+                  }, '\u{1F409}')
+                })),
                 React.createElement('div', { style: { padding: '8px' } },
                   React.createElement('div', { style: { color: '#dcddde', fontSize: '12px', fontWeight: 700, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, card.name || 'Unknown'),
                   React.createElement('div', { style: { color: rarityColor, fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '3px' } }, card.rarity || ''),
@@ -623,9 +625,11 @@ function ProfileView(props) {
                     },
                     onClick: function() { toggleShowcaseItem('card', resolved.data.id); }
                   }, 'X') : null,
-                  card.img
-                    ? React.createElement('img', { src: card.img, style: { width: '100%', height: '70px', objectFit: 'cover' } })
-                    : React.createElement('div', { style: { height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', background: '#18181b' } }, '\u{1F409}'),
+                  React.createElement(FallbackImg, {
+                    src: card.img,
+                    style: { width: '100%', height: '70px', objectFit: 'cover' },
+                    fallback: React.createElement('div', { style: { height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', background: '#18181b' } }, '\u{1F409}')
+                  }),
                   React.createElement('div', { style: { padding: '6px' } },
                     React.createElement('div', { style: { color: '#dcddde', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, card.name || '?'),
                     React.createElement('div', { style: { color: rarityColor, fontSize: '9px', fontWeight: 700, textTransform: 'uppercase' } }, card.rarity || '')
@@ -703,9 +707,11 @@ function ProfileView(props) {
               },
               onClick: function() { toggleShowcaseItem('card', cardData.id); }
             },
-              card.img
-                ? React.createElement('img', { src: card.img, style: { width: '100%', height: '50px', objectFit: 'cover' } })
-                : React.createElement('div', { style: { height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: '#18181b' } }, '\u{1F409}'),
+              React.createElement(FallbackImg, {
+                src: card.img,
+                style: { width: '100%', height: '50px', objectFit: 'cover' },
+                fallback: React.createElement('div', { style: { height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', background: '#18181b' } }, '\u{1F409}')
+              }),
               React.createElement('div', { style: { padding: '4px' } },
                 React.createElement('div', { style: { color: '#dcddde', fontSize: '10px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, card.name || '?'),
                 alreadyIn ? React.createElement('div', { style: { color: '#57f287', fontSize: '9px', fontWeight: 700 } }, 'ADDED') : null
@@ -740,7 +746,15 @@ function ProfileView(props) {
               title: p.name,
               onClick: function() { if (ctx.socket) ctx.socket.emit('avatar_set', { portraitId: p.id }); }
             },
-              React.createElement('img', { src: p.img, style: { width: '100%', height: '100%', objectFit: 'cover' } })
+              React.createElement(FallbackImg, {
+                src: p.img,
+                style: { width: '100%', height: '100%', objectFit: 'cover' },
+                // The server only lists portraits whose art it found on disk, but
+                // fall back to the portrait's emoji if a file disappears anyway.
+                fallback: React.createElement('div', {
+                  style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', background: '#18181b' }
+                }, p.icon || '\u{1F464}')
+              })
             );
           })
         )
@@ -766,9 +780,11 @@ function ProfileView(props) {
           },
           title: profile.isOwn ? 'Click to change avatar' : ''
         },
-          profile.avatar
-            ? React.createElement('img', { src: profile.avatar, style: { width: '100%', height: '100%', objectFit: 'cover' } })
-            : React.createElement('div', { style: { fontSize: '28px', color: '#949ba4' } }, '\u{1F464}')
+          React.createElement(FallbackImg, {
+            src: profile.avatar,
+            style: { width: '100%', height: '100%', objectFit: 'cover' },
+            fallback: React.createElement('div', { style: { fontSize: '28px', color: '#949ba4' } }, '\u{1F464}')
+          })
         )
       ),
       React.createElement('div', {

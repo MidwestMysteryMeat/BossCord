@@ -556,19 +556,18 @@ function LandingPage() {
           }
         },
           // Small avatar
-          ctx.user && ctx.user.avatar
-            ? React.createElement('img', {
-                src: ctx.user.avatar,
-                style: { width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }
-              })
-            : React.createElement('div', {
-                style: {
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  background: (ctx.user && ctx.user.color) || '#f0b232', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 700, fontSize: '12px', color: '#fff', flexShrink: 0
-                }
-              }, ((ctx.user && ctx.user.name) || '?')[0].toUpperCase()),
+          React.createElement(FallbackImg, {
+            src: ctx.user && ctx.user.avatar,
+            style: { width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 },
+            fallback: React.createElement('div', {
+              style: {
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: (ctx.user && ctx.user.color) || '#f0b232', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: '12px', color: '#fff', flexShrink: 0
+              }
+            }, ((ctx.user && ctx.user.name) || '?')[0].toUpperCase())
+          }),
           // Name + chips inline
           React.createElement('div', { style: { flex: 1, minWidth: 0 } },
             React.createElement('div', {
@@ -628,22 +627,21 @@ function LandingPage() {
         !isMobile && ctx.user ? React.createElement('div', {
           style: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '12px', flexShrink: 0 }
         },
-          ctx.user.avatar
-            ? React.createElement('img', {
-                src: ctx.user.avatar,
-                style: {
-                  width: '40px', height: '40px', borderRadius: '50%',
-                  objectFit: 'cover', flexShrink: 0
-                }
-              })
-            : React.createElement('div', {
-                style: {
-                  width: '40px', height: '40px', borderRadius: '50%',
-                  background: ctx.user.color || '#f0b232', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', fontWeight: 700,
-                  fontSize: '18px', color: '#fff', flexShrink: 0
-                }
-              }, (ctx.user.name || '?')[0].toUpperCase()),
+          React.createElement(FallbackImg, {
+            src: ctx.user.avatar,
+            style: {
+              width: '40px', height: '40px', borderRadius: '50%',
+              objectFit: 'cover', flexShrink: 0
+            },
+            fallback: React.createElement('div', {
+              style: {
+                width: '40px', height: '40px', borderRadius: '50%',
+                background: ctx.user.color || '#f0b232', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                fontSize: '18px', color: '#fff', flexShrink: 0
+              }
+            }, (ctx.user.name || '?')[0].toUpperCase())
+          }),
           React.createElement('div', null,
             React.createElement('div', { style: { fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' } },
               ctx.user.name,

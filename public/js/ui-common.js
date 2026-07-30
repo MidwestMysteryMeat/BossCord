@@ -1,3 +1,47 @@
+// ===================== IMAGE WITH FALLBACK =====================
+// Art under /icons/ is owner-licensed and not shipped with the repo, so any image
+// path in the catalogues may resolve to a 404. Rendering a raw <img> for those
+// leaves the browser's broken-image glyph on screen; this wrapper swaps in the
+// caller's fallback element instead.
+//
+// It also handles src being null/empty, so call sites pass the avatar/card path
+// straight in and give the initial circle or emoji as `fallback` — no ternary.
+//
+//   React.createElement(FallbackImg, {
+//     src: user.avatar,                      // may be null or a missing file
+//     style: { width: '32px', height: '32px', borderRadius: '50%' },
+//     fallback: React.createElement('div', { style: circleStyle }, 'A')
+//   })
+//
+// Any other prop (alt, draggable, className, onClick...) is forwarded to the <img>.
+function FallbackImg(props) {
+  var [failed, setFailed] = useState(false);
+  var src = props.src;
+
+  // A new src deserves a fresh attempt — otherwise picking a different avatar
+  // after one failed load would keep showing the fallback forever.
+  var lastSrc = useRef(src);
+  if (lastSrc.current !== src) {
+    lastSrc.current = src;
+    if (failed) setFailed(false);
+  }
+
+  if (!src || failed) {
+    return props.fallback === undefined ? null : props.fallback;
+  }
+
+  var imgProps = {};
+  for (var key in props) {
+    if (key !== 'fallback') imgProps[key] = props[key];
+  }
+  imgProps.onError = function(e) {
+    setFailed(true);
+    if (props.onError) props.onError(e);
+  };
+  return React.createElement('img', imgProps);
+}
+window.FallbackImg = FallbackImg;
+
 // ===================== WIPE WARNING BANNER =====================
 function WipeWarningBanner() {
   var ctx = useSocket();

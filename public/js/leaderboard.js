@@ -107,22 +107,21 @@ function LeaderboardTab() {
           }, medalIcon(i)),
 
           // Avatar circle
-          entry.avatar
-            ? React.createElement('img', {
-                src: entry.avatar,
-                style: {
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  objectFit: 'cover', flexShrink: 0
-                }
-              })
-            : React.createElement('div', {
-                style: {
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  background: entry.color || '#4e5058', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '14px', fontWeight: 700, color: '#1c1c1e'
-                }
-              }, (entry.username || '?')[0].toUpperCase()),
+          React.createElement(FallbackImg, {
+            src: entry.avatar,
+            style: {
+              width: '32px', height: '32px', borderRadius: '50%',
+              objectFit: 'cover', flexShrink: 0
+            },
+            fallback: React.createElement('div', {
+              style: {
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: entry.color || '#4e5058', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', fontWeight: 700, color: '#1c1c1e'
+              }
+            }, (entry.username || '?')[0].toUpperCase())
+          }),
 
           // Name
           React.createElement('div', { style: { flex: 1, minWidth: 0 } },
