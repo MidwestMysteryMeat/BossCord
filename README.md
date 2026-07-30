@@ -1,6 +1,6 @@
 # BossCord
 
-**An anonymous, ephemeral Discord-style chat platform with a built-in mini-game arcade and chip economy — Node.js/Socket.IO backend, buildless React frontend.**
+**An anonymous, ephemeral Discord-style chat platform — Node.js/Socket.IO backend, buildless React frontend. This is the `social-only` branch: chat, voice, DMs, friends and the Cords feed, with the mini-game arcade and chip economy removed.**
 
 > **⚠️ Important: BossCord is anonymous and ephemeral by design. Public
 > instances can attract abuse. As the operator you are fully responsible for
@@ -12,17 +12,19 @@
 
 ## What it does
 
-BossCord is real-time chat with public rooms and private servers (text/voice/video channels), designed around ephemerality: no accounts required to chat, and rooms/messages wipe daily at midnight UTC ("No accounts. No databases. No traces."). Auth is proof-of-work + a 4-digit PIN + session tokens. On top of the chat sits a full arcade — chess (with clocks), a trading card game, horse racing, pool, liero, plinko, coinflip, a virtual stock market, and an auction house — all sharing an in-game chip economy with a loot/gacha layer. Includes DMs with client-side crypto, friends, a social feed, moderation tools, and rate limiting.
+BossCord is real-time chat with public rooms and private servers (text/voice/video channels), designed around ephemerality: no accounts required to chat, and rooms/messages wipe daily at midnight UTC ("No accounts. No databases. No traces."). Auth is proof-of-work + a 4-digit PIN + session tokens. Includes DMs with client-side crypto, friends, the Cords short-post feed, video roulette (random 1-on-1 video chat), profile avatars, moderation tools, and rate limiting.
 
-> **Virtual chips only — not gambling.** All games use in-game chips that have **no real-world monetary value**. There is no way to deposit, buy, or withdraw real money, and chips refill for free when depleted. The arcade is simulated, for entertainment only.
+On this branch the arcade is gone. `main` carries a full mini-game suite — chess, a trading card game, horse racing, pool, liero, plinko, coinflip, a virtual stock market and an auction house, all sharing an in-game chip economy with a loot/gacha layer. None of that ships here: no games, no chips, no inventory, no leaderboards.
+
+> **No games, no chips, no gambling mechanics of any kind on this branch.** The chip economy and the casino-style games live on `main` only.
 
 ## Status
 
-**Feature-rich, thin on tests.** All 95 server/client JS files are syntax-clean, the chess timer test passes, and the server smoke-boots cleanly. Rough edges:
+**Slimmed and boots clean.** Every tracked JS file is syntax-clean and `_test_social.js` passes 9/9 (API surface, index.html script manifest, no dangling requires of removed modules). Rough edges:
 
-- The **TCG trade + challenge flow is fully implemented server-side with no client UI** (dormant feature)
 - No message editing/deletion, image attachments, or replies
-- Essentially no automated test suite (one ad-hoc chess script)
+- The test suite is one smoke script, not unit coverage
+- `accounts.js` still persists dormant `chips`/`inventory`/`cards` fields on account records so an account stays loadable on either branch; nothing reads or writes them here
 
 ## How to run
 
@@ -43,7 +45,7 @@ The React client is served statically from `public/` and uses `React.createEleme
 ![Login — anonymous entry: pick a display name (or none), optional saved account key + PIN](docs/screenshots/login.png)
 
 _The ToS gate is the first thing every visitor sees; login is anonymous by
-design. In-app captures (a public room, the games hub, a chess match) — TODO._
+design. In-app captures (a public room, a DM thread, the Cords feed) — TODO._
 
 ## Moderation & anti-abuse
 
@@ -80,7 +82,7 @@ part of its identity, not an optional layer.
 
 ## Known issues / roadmap
 
-See [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md). Priority: ship the dormant TCG trade UI + seed a jest/CI test suite → message edit/delete + replies → image attachments (ephemeral, purge on wipe) → daily leaderboards → push notifications. Deliberately *not* planned: persistent message history, webhooks/bots, read receipts (they contradict the "no traces" identity).
+See [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md). Priority on this branch: seed a jest/CI test suite → message edit/delete + replies → image attachments (ephemeral, purge on wipe) → push notifications. Deliberately *not* planned: persistent message history, webhooks/bots, read receipts (they contradict the "no traces" identity), and anything from the arcade — games belong on `main`.
 
 ## AI development note
 
@@ -88,15 +90,11 @@ Developed with AI assistance — **Anthropic Claude** (Claude Code) for implemen
 
 ## Legal & responsible use
 
-- **No real money, not gambling.** As noted above, chips are virtual and have no
-  monetary value; there is no deposit, purchase, or cash-out. The casino-style
-  games are simulations for entertainment. *Do not* wire real-money payments into
-  the chip economy — doing so would turn a simulated game into regulated gambling
-  that requires licensing in most jurisdictions. That would be your legal problem,
-  not the project's.
-- **Intended for adults (18+) where simulated gaming is permitted.** Even without
-  real money, the arcade includes gambling-style mechanics. Run and use it
-  accordingly.
+- **No games and no chip economy on this branch.** Nothing here simulates
+  gambling. If you merge the arcade back in from `main`, re-read that branch's
+  gambling and 18+ clauses first — they apply again the moment chips return.
+- **Intended for adults (18+).** Anonymous ephemeral chat attracts abuse; the
+  ToS gate and moderation tooling assume an adult audience.
 - **Self-hosting is your responsibility.** If you deploy a public instance, *you*
   are the operator: you are responsible for content moderation, for handling and
   reporting illegal content (this obligation exists regardless of the "no traces"

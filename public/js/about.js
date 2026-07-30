@@ -46,28 +46,23 @@ function AboutTab() {
       badge: 'Anonymous', badgeColor: '#9b59b6'
     },
     {
-      icon: '\uD83C\uDFAE', title: '13+ Built-in Games',
-      desc: 'BossOrbs (real-time multiplayer), Texas Hold\'em, Blackjack, Slots, Plinko, Coinflip, Lucky Scrolls, Loot Boxes, TCG Battles, Stock Market, Auction House, Clicker Idle, and more.',
-      badge: 'Games', badgeColor: '#f0b232'
+      icon: '\uD83D\uDD12', title: 'Encrypted Direct Messages',
+      desc: 'One-to-one messages with client-side encryption. Keys never leave your browser, and DMs wipe daily along with everything else.',
+      badge: 'Private', badgeColor: '#5865f2'
     },
     {
-      icon: '\uD83C\uDCCF', title: 'Trading Card Game',
-      desc: '80+ unique cards across 10 rarity tiers from Common to Godly. 8 elemental types with strengths and weaknesses. Open packs, build decks, battle other players in real-time TCG combat.',
-      badge: 'TCG', badgeColor: '#ff69b4'
+      icon: '\uD83C\uDFA5', title: 'Voice & Video Channels',
+      desc: 'Talk or share video in any room channel. Peer-to-peer WebRTC \u2014 the server only relays signalling.',
+      badge: 'Voice', badgeColor: '#00bcd4'
     },
     {
-      icon: '\uD83D\uDCC8', title: 'Stock Market Simulator',
-      desc: '39 simulated stocks with real-time price ticks every 15 seconds. Random market events cause crashes and booms. Build a portfolio and compete on the leaderboard.',
-      badge: 'Economy', badgeColor: '#00bcd4'
-    },
-    {
-      icon: '\uD83C\uDFAA', title: 'Loot & Inventory System',
-      desc: 'Earn chips across all games. Buy loot boxes for badges, titles, and collectibles with modifiers like Shiny, Ancient, and Cursed. Equip items to customize your profile.',
-      badge: 'Loot', badgeColor: '#ff9800'
+      icon: '\uD83C\uDFB2', title: 'Video Roulette',
+      desc: 'Get paired at random with another user for a one-on-one video chat. Skip any time to draw someone new.',
+      badge: 'Random', badgeColor: '#ff69b4'
     },
     {
       icon: '\uD83D\uDC65', title: 'Friends System',
-      desc: 'Click any username in chat, cords, or the leaderboard to add them as a friend. Share your friend tag (Username#ABCD) for others to add you. See who is online, send game invites, and DM friends with end-to-end encryption.',
+      desc: 'Click any username in chat or cords to add them as a friend. Share your friend tag (Username#ABCD) for others to add you. See who is online and DM friends with end-to-end encryption.',
       badge: 'Social', badgeColor: '#2ecc71'
     },
     {
@@ -109,7 +104,7 @@ function AboutTab() {
       ),
       React.createElement('p', {
         style: { fontSize: isMobile ? '14px' : '16px', color: '#b0b0b0', maxWidth: '600px', margin: '0 auto 16px', lineHeight: '1.5' }
-      }, 'Anonymous chat with games, trading cards, a stock market, and encrypted DMs. No sign-up needed. All messages wipe at midnight UTC.'),
+      }, 'Anonymous chat with rooms, voice, a short-post feed, and encrypted DMs. No sign-up needed. All messages wipe at midnight UTC.'),
       React.createElement('div', {
         style: { display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap' }
       },
@@ -153,7 +148,7 @@ function AboutTab() {
         React.createElement('div', { style: featureCardStyle },
           React.createElement('div', { style: subheadStyle }, '\uD83D\uDD04 Daily Wipe'),
           React.createElement('p', { style: textStyle },
-            'Every night at midnight, all messages, rooms, and game data are deleted. Your account and chips stay, but conversations are gone for good.'
+            'Every night at midnight, all messages, rooms, and cords are deleted. Your account stays, but conversations are gone for good.'
           )
         ),
       )

@@ -1,10 +1,11 @@
 {
-  "name": "bosscord",
-  "version": "2.0.0",
-  "description": "BossCord - Anonymous ephemeral chat with public rooms and private servers",
+  "name": "bosscord-social",
+  "version": "2.0.0-social",
+  "description": "BossCord (social-only) - Anonymous ephemeral chat with public rooms and private servers, without the mini-game arcade or chip economy",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node _test_social.js"
   },
   "engines": {
     "node": ">=18"

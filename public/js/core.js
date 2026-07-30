@@ -822,18 +822,9 @@ function SocketProvider({ children }) {
   const [activeTab, setActiveTab] = useState('chat');
   const activeTabRef = useRef('chat');
 
-  // Namespace sockets for /games and /market (lazy-connected)
-  const [gamesSocket, setGamesSocket] = useState(null);
-  const [marketSocket, setMarketSocket] = useState(null);
-  const gamesSocketRef = useRef(null);
-  const marketSocketRef = useRef(null);
   const accountKeyRef = useRef(null);
   const sessionTokenRef = useRef(null);
 
-  // Idle disconnect timers for namespace sockets
-  const gamesIdleTimerRef = useRef(null);
-  const marketIdleTimerRef = useRef(null);
-  const IDLE_DISCONNECT_MS = 2 * 60 * 1000; // 2 minutes
 
   // Keep accountKeyRef in sync
   useEffect(function() {
@@ -845,61 +836,7 @@ function SocketProvider({ children }) {
     activeTabRef.current = activeTab;
   }, [activeTab]);
 
-  // Idle disconnect for namespace sockets when user leaves their tab
-  useEffect(function() {
-    // Games socket idle logic
-    if (activeTab === 'games') {
-      // User is on games tab - cancel any idle timer
-      if (gamesIdleTimerRef.current) {
-        clearTimeout(gamesIdleTimerRef.current);
-        gamesIdleTimerRef.current = null;
-      }
-    } else {
-      // User left games tab - start idle timer if games socket is connected
-      if (gamesSocketRef.current && gamesSocketRef.current.connected && !gamesIdleTimerRef.current) {
-        gamesIdleTimerRef.current = setTimeout(function() {
-          if (gamesSocketRef.current && gamesSocketRef.current.connected && activeTabRef.current !== 'games') {
-            gamesSocketRef.current.disconnect();
-            gamesSocketRef.current = null;
-            setGamesSocket(null);
-          }
-          gamesIdleTimerRef.current = null;
-        }, IDLE_DISCONNECT_MS);
-      }
-    }
 
-    // Market socket idle logic
-    if (activeTab === 'games') {
-      // Market is used within the games hub, so keep it alive on games tab too
-      if (marketIdleTimerRef.current) {
-        clearTimeout(marketIdleTimerRef.current);
-        marketIdleTimerRef.current = null;
-      }
-    } else {
-      if (marketSocketRef.current && marketSocketRef.current.connected && !marketIdleTimerRef.current) {
-        marketIdleTimerRef.current = setTimeout(function() {
-          if (marketSocketRef.current && marketSocketRef.current.connected && activeTabRef.current !== 'games') {
-            marketSocketRef.current.disconnect();
-            marketSocketRef.current = null;
-            setMarketSocket(null);
-          }
-          marketIdleTimerRef.current = null;
-        }, IDLE_DISCONNECT_MS);
-      }
-    }
-
-    return function() {
-      // Cleanup timers only on unmount, not on every tab change
-    };
-  }, [activeTab, gamesSocket, marketSocket]);
-
-  // Cleanup idle timers on full unmount
-  useEffect(function() {
-    return function() {
-      if (gamesIdleTimerRef.current) clearTimeout(gamesIdleTimerRef.current);
-      if (marketIdleTimerRef.current) clearTimeout(marketIdleTimerRef.current);
-    };
-  }, []);
 
   const voiceManagerRef = useRef(_globalVoiceManager);
   const socketIdRef = useRef(null);
@@ -1029,74 +966,6 @@ function SocketProvider({ children }) {
     return text.replace(slurFilterRegex.current, '***');
   }, [slurFilterEnabled]);
 
-  // Lazy-connect to /games namespace
-  const connectGames = useCallback(function() {
-    if (gamesSocketRef.current && gamesSocketRef.current.connected) return gamesSocketRef.current;
-    // Clean up stale socket if it exists but is disconnected
-    if (gamesSocketRef.current) {
-      gamesSocketRef.current.disconnect();
-      gamesSocketRef.current = null;
-    }
-    var token = sessionTokenRef.current;
-    if (!token) return null;
-    var gs = io('/games', {
-      auth: { sessionToken: token },
-      transports: ['websocket']
-    });
-    // Forward chips_updated from /games to local account state
-    gs.on('chips_updated', function(data) {
-      if (!data || typeof data.chips !== 'number') return;
-      setAccount(function(prev) {
-        if (!prev) return prev;
-        return Object.assign({}, prev, { chips: data.chips });
-      });
-    });
-    gamesSocketRef.current = gs;
-    setGamesSocket(gs);
-    return gs;
-  }, []);
-
-  // Lazy-connect to /market namespace
-  const connectMarket = useCallback(function() {
-    if (marketSocketRef.current && marketSocketRef.current.connected) return marketSocketRef.current;
-    if (marketSocketRef.current) {
-      marketSocketRef.current.disconnect();
-      marketSocketRef.current = null;
-    }
-    var token = sessionTokenRef.current;
-    if (!token) return null;
-    var ms = io('/market', {
-      auth: { sessionToken: token },
-      transports: ['websocket']
-    });
-    // Forward chips_updated from /market to local account state
-    ms.on('chips_updated', function(data) {
-      if (!data || typeof data.chips !== 'number') return;
-      setAccount(function(prev) {
-        if (!prev) return prev;
-        return Object.assign({}, prev, { chips: data.chips });
-      });
-    });
-    marketSocketRef.current = ms;
-    setMarketSocket(ms);
-    return ms;
-  }, []);
-
-  // Disconnect namespace sockets when main socket disconnects
-  useEffect(function() {
-    if (!connected) {
-      if (gamesSocketRef.current) {
-        gamesSocketRef.current.disconnect();
-        gamesSocketRef.current = null;
-        setGamesSocket(null);
-      }
-      if (marketSocketRef.current) {
-        marketSocketRef.current.disconnect();
-        marketSocketRef.current = null;
-        setMarketSocket(null);
-      }
-    }
-  }, [connected]);
 
   useEffect(() => {
     if (!socket) return;
@@ -1155,20 +1024,13 @@ function SocketProvider({ children }) {
       if (data && data.key) {
         localStorage.setItem('bosscord_key', data.key);
         setAccountKey(data.key);
-        setAccount({ key: data.key, chips: data.chips, stats: data.stats, createdAt: data.createdAt });
+        setAccount({ key: data.key, stats: data.stats, createdAt: data.createdAt });
       }
     }
     function onAccountDeleted() {
       localStorage.removeItem('bosscord_key');
       setAccountKey(null);
       setAccount(null);
-    }
-    function onChipsUpdated(data) {
-      if (!data || typeof data.chips !== 'number') return;
-      setAccount(function(prev) {
-        if (!prev) return prev;
-        return Object.assign({}, prev, { chips: data.chips });
-      });
     }
     function onSlurFilterUpdated(data) {
       if (!data) return;
@@ -1557,7 +1419,6 @@ function SocketProvider({ children }) {
     socket.on('server_wipe', onServerWipe);
     socket.on('account_created', onAccountCreated);
     socket.on('account_deleted', onAccountDeleted);
-    socket.on('chips_updated', onChipsUpdated);
     socket.on('slur_filter_updated', onSlurFilterUpdated);
     socket.on('message_deleted', onMessageDeleted);
     socket.on('kicked_from_room', onKickedFromRoom);
@@ -1619,7 +1480,6 @@ function SocketProvider({ children }) {
       socket.off('server_wipe', onServerWipe);
       socket.off('account_created', onAccountCreated);
       socket.off('account_deleted', onAccountDeleted);
-      socket.off('chips_updated', onChipsUpdated);
       socket.off('slur_filter_updated', onSlurFilterUpdated);
       socket.off('message_deleted', onMessageDeleted);
       socket.off('kicked_from_room', onKickedFromRoom);
@@ -1683,7 +1543,6 @@ function SocketProvider({ children }) {
     slurFilterEnabled, toggleSlurFilter, censorText,
     powStatus, pinRequired, pinSetupRequired,
     pinnedMessages, setPinnedMessages,
-    gamesSocket, marketSocket, connectGames, connectMarket,
     serverStats,
     unreadDMs, setUnreadDMs, unreadFriendRequests, setUnreadFriendRequests,
     activeTab, setActiveTab
@@ -1694,7 +1553,6 @@ function SocketProvider({ children }) {
     isMuted, isDeafened, voiceError, account, accountKey, createAccount, deleteAccount,
     slurFilterEnabled, toggleSlurFilter, censorText, powStatus, pinRequired, pinSetupRequired,
     pinnedMessages,
-    gamesSocket, marketSocket, connectGames, connectMarket,
     serverStats,
     unreadDMs, unreadFriendRequests, activeTab]);
 

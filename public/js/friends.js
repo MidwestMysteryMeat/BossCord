@@ -6,7 +6,6 @@ function FriendsPanel() {
   var [addTagInput, setAddTagInput] = useState('');
   var [status, setStatus] = useState(null);
   var [tagCopied, setTagCopied] = useState(false);
-  var [tcgInvite, setTcgInvite] = useState(null);
   var statusTimerRef = useRef(null);
   var tagCopiedTimerRef = useRef(null);
 
@@ -46,37 +45,16 @@ function FriendsPanel() {
         });
       });
     }
-    function onInvite(data) {
-      setStatus(data.fromUsername + ' invited you to play ' + data.gameType + '!');
-      if (typeof BossCordNotifs !== 'undefined') BossCordNotifs.notify('Game Invite', data.fromUsername + ' invited you to ' + data.gameType + '!', 'ginv');
-      // If this is a TCG invite with a lobbyId, also trigger the tcg_table_invite handler
-      if (data.gameType === 'tcg' && data.lobbyId) {
-        setTcgInvite({ tableId: data.lobbyId, fromName: data.fromUsername });
-      }
-      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-      statusTimerRef.current = setTimeout(function() { setStatus(null); }, 5000);
-    }
-    function onTcgTableInvite(data) {
-      setTcgInvite({ tableId: data.tableId, fromName: data.fromName || 'Someone', fromColor: data.fromColor || '#dcddde' });
-      setStatus((data.fromName || 'Someone') + ' invited you to a card battle table!');
-      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-      statusTimerRef.current = setTimeout(function() { setStatus(null); }, 6000);
-    }
-
     ctx.socket.on('friends_list', onFriendsList);
     ctx.socket.on('friend_request_received', onRequestReceived);
     ctx.socket.on('friend_request_accepted', onRequestAccepted);
     ctx.socket.on('friend_status_changed', onStatusChanged);
-    ctx.socket.on('game_invite', onInvite);
-    ctx.socket.on('tcg_table_invite', onTcgTableInvite);
 
     return function() {
       ctx.socket.off('friends_list', onFriendsList);
       ctx.socket.off('friend_request_received', onRequestReceived);
       ctx.socket.off('friend_request_accepted', onRequestAccepted);
       ctx.socket.off('friend_status_changed', onStatusChanged);
-      ctx.socket.off('game_invite', onInvite);
-      ctx.socket.off('tcg_table_invite', onTcgTableInvite);
     };
   }, [ctx.socket]);
 
@@ -110,13 +88,6 @@ function FriendsPanel() {
   function unblockUser(targetKey) {
     ctx.socket.emit('friend_unblock', { targetKey: targetKey });
   }
-  function inviteToGame(friendKey, gameType) {
-    ctx.socket.emit('friend_invite_game', { targetKey: friendKey, gameType: gameType });
-    setStatus('Invite sent!');
-    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-    statusTimerRef.current = setTimeout(function() { setStatus(null); }, 2000);
-  }
-
   var tabBtnStyle = function(t) {
     return {
       flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
@@ -156,19 +127,6 @@ function FriendsPanel() {
               React.createElement('span', {
                 style: { color: f.color || '#dcddde', fontWeight: 600, flex: 1 }
               }, f.username),
-              // Chips
-              React.createElement('span', {
-                style: { color: '#f0b232', fontSize: '12px', marginRight: '8px' }
-              }, (f.chips || 0).toLocaleString() + ' chips'),
-              // Invite button (only if online)
-              f.online ? React.createElement('button', {
-                onClick: function() { inviteToGame(f.key, 'cards'); },
-                title: 'Invite to play a game',
-                style: {
-                  padding: '4px 8px', border: 'none', borderRadius: '4px', cursor: 'pointer',
-                  background: '#5865f2', color: '#fff', fontSize: '11px',
-                }
-              }, 'Play') : null,
               // Remove button
               React.createElement('button', {
                 onClick: function() { removeFriend(f.key); },
@@ -314,44 +272,6 @@ function FriendsPanel() {
     status ? React.createElement('div', {
       style: { padding: '8px 20px', background: '#2d2d30', color: '#57f287', fontSize: '13px', textAlign: 'center' }
     }, status) : null,
-    // TCG table invite banner
-    tcgInvite ? React.createElement('div', {
-      style: {
-        padding: '10px 20px', background: '#2a2a1a', borderBottom: '1px solid #f0b232',
-        display: 'flex', alignItems: 'center', gap: '10px'
-      }
-    },
-      React.createElement('div', { style: { flex: 1 } },
-        React.createElement('span', { style: { color: '#f0b232', fontWeight: 700, fontSize: '13px' } },
-          '\u2694 ' + (tcgInvite.fromName || 'Someone') + ' invited you to a card battle!')
-      ),
-      React.createElement('button', {
-        style: {
-          padding: '5px 14px', background: '#57f287', border: 'none', borderRadius: '5px',
-          color: '#1c1c1e', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit'
-        },
-        onClick: function() {
-          if (ctx.marketSocket) {
-            ctx.marketSocket.emit('tcg_join_table', { tableId: tcgInvite.tableId });
-          } else if (ctx.socket) {
-            ctx.connectMarket();
-            // Small delay to let market socket connect, then join
-            setTimeout(function() {
-              var ms = ctx.marketSocket;
-              if (ms) ms.emit('tcg_join_table', { tableId: tcgInvite.tableId });
-            }, 1000);
-          }
-          setTcgInvite(null);
-        }
-      }, 'Join Table'),
-      React.createElement('button', {
-        style: {
-          padding: '5px 10px', background: 'none', border: '1px solid #4e5058', borderRadius: '5px',
-          color: '#949ba4', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit'
-        },
-        onClick: function() { setTcgInvite(null); }
-      }, '\u2715')
-    ) : null,
     // Tab bar
     React.createElement('div', {
       style: { display: 'flex', borderBottom: '1px solid #2a2a2e' }

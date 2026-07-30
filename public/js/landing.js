@@ -127,20 +127,6 @@ function LandingPage() {
     return function() { clearTimeout(timer); };
   }, [ctx.publicRooms, ctx.user]);
 
-  // Chips counter roll animation on landing hub
-  var hubChipsRef = useRef(null);
-  var prevHubChipsRef = useRef((ctx.account && ctx.account.chips) || 0);
-  useEffect(function() {
-    var currentChips = (ctx.account && ctx.account.chips) || 0;
-    var prevChips = prevHubChipsRef.current;
-    if (currentChips !== prevChips && hubChipsRef.current && window.BossEffects) {
-      window.BossEffects.numberRoll(hubChipsRef.current, prevChips, currentChips, 600, function(v) {
-        return Math.floor(v).toLocaleString() + ' chips';
-      });
-    }
-    prevHubChipsRef.current = currentChips;
-  }, [ctx.account && ctx.account.chips]);
-
   function handleConnect() {
     var keyToUse = showKeyInput && keyInput.trim() ? keyInput.trim() : undefined;
     // Validate key length
@@ -534,8 +520,6 @@ function LandingPage() {
     ) : null,
 
     topTab === 'cords' ? React.createElement(CordsTab) :
-    topTab === 'games' ? React.createElement(GamesTab) :
-    topTab === 'leaderboard' ? React.createElement(LeaderboardTab) :
     topTab === 'friends' ? React.createElement(FriendsPanel) :
     topTab === 'dms' ? React.createElement(DMView) :
     topTab === 'roulette' ? React.createElement(RouletteView) :
@@ -569,16 +553,13 @@ function LandingPage() {
                   fontWeight: 700, fontSize: '12px', color: '#fff', flexShrink: 0
                 }
               }, ((ctx.user && ctx.user.name) || '?')[0].toUpperCase()),
-          // Name + chips inline
+          // Name
           React.createElement('div', { style: { flex: 1, minWidth: 0 } },
             React.createElement('div', {
               style: { fontWeight: 600, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }
             },
               ctx.user && ctx.user.name,
-              ctx.account && !ctx.account.temp ? React.createElement('span', { style: { fontSize: '11px', color: '#f0b232' } }, '\uD83D\uDD11') : null,
-              ctx.account ? React.createElement('span', {
-                style: { fontSize: '11px', color: '#f0b232', fontWeight: 600, marginLeft: '2px' }
-              }, (ctx.account.chips || 0).toLocaleString() + ' chips') : null
+              ctx.account && !ctx.account.temp ? React.createElement('span', { style: { fontSize: '11px', color: '#f0b232' } }, '\uD83D\uDD11') : null
             )
           ),
           // Claim key button (compact) — show for temp accounts
@@ -652,10 +633,7 @@ function LandingPage() {
                 title: 'Verified account'
               }, '\uD83D\uDD11') : null
             ),
-            ctx.account ? React.createElement('div', {
-              ref: hubChipsRef,
-              style: { color: '#f0b232', fontSize: '12px', fontWeight: 600 }
-            }, (ctx.account.chips != null ? ctx.account.chips : 0) + ' chips') :
+            ctx.account ? null :
             React.createElement('div', { style: { color: '#949ba4', fontSize: '12px' } }, 'Anonymous')
           ),
           // Sound toggle button (desktop)

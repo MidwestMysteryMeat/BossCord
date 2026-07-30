@@ -3399,16 +3399,6 @@ function ChatLayout({ activeTab, onTabChange }) {
     );
   }
 
-  if (activeTab === 'games') {
-    return React.createElement('div', {
-      style: { display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', paddingBottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '0' }
-    },
-      isMobile ? null : React.createElement(TopTabBar, { activeTab: activeTab, onTabChange: onTabChange, compact: true }),
-      React.createElement(GamesTab),
-      isMobile ? React.createElement(BottomTabBar, { activeTab: activeTab, onTabChange: onTabChange }) : null
-    );
-  }
-
   if (activeTab === 'friends') {
     return React.createElement('div', {
       style: { display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', paddingBottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '0' }
@@ -3435,16 +3425,6 @@ function ChatLayout({ activeTab, onTabChange }) {
     },
       isMobile ? null : React.createElement(TopTabBar, { activeTab: activeTab, onTabChange: onTabChange, compact: true }),
       React.createElement(RouletteView),
-      isMobile ? React.createElement(BottomTabBar, { activeTab: activeTab, onTabChange: onTabChange }) : null
-    );
-  }
-
-  if (activeTab === 'leaderboard') {
-    return React.createElement('div', {
-      style: { display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', paddingBottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '0' }
-    },
-      isMobile ? null : React.createElement(TopTabBar, { activeTab: activeTab, onTabChange: onTabChange, compact: true }),
-      React.createElement(LeaderboardTab),
       isMobile ? React.createElement(BottomTabBar, { activeTab: activeTab, onTabChange: onTabChange }) : null
     );
   }

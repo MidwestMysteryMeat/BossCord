@@ -9,42 +9,23 @@ const cords = require('./cords');
 const filter = require('./filter');
 const ratelimit = require('./ratelimit');
 const pow = require('./pow');
-const { CoinFlipManager, CHIP_REWARD, MIN_BET, MAX_BET: CF_MAX_BET, COUNTDOWN_MS, RESULT_DISPLAY_MS } = require('./coinflip');
-const plinko = require('./plinko');
-const loot = require('./loot');
-const tcg = require('./tcg');
-const { StockMarket } = require('./stocks');
-const { AuctionHouse } = require('./auction');
+const portraits = require('./portraits');
 
 // Handler modules
-const { checkEventRate, sanitizeText, validateUrl, saveChipsForSocket, saveAllLobbyChips, enrichInventory, processPokerBots } = require('./handlers/helpers');
+const { checkEventRate, sanitizeText, validateUrl } = require('./handlers/helpers');
 const roomsHandler = require('./handlers/rooms');
 const chatHandler = require('./handlers/chat');
 const channelsHandler = require('./handlers/channels');
 const voiceHandler = require('./handlers/voice');
-const gameOrbsHandler = require('./handlers/game-orbs');
-const gameCardsHandler = require('./handlers/game-cards');
-const gameSlotsHandler = require('./handlers/game-slots');
-const gamePlinkoHandler = require('./handlers/game-plinko');
-const gameCoinflipHandler = require('./handlers/game-coinflip');
-const gameScratchHandler = require('./handlers/game-scratch');
-const gameLootboxHandler = require('./handlers/game-lootbox');
-const inventoryHandler = require('./handlers/inventory');
-const tcgHandler = require('./handlers/tcg');
-const stocksHandler = require('./handlers/stocks');
-const auctionHandler = require('./handlers/auction');
 const accountsHandler = require('./handlers/accounts');
+const profileHandler = require('./handlers/profile');
 const cordsEventsHandler = require('./handlers/cords-events');
 const moderationHandler = require('./handlers/moderation');
-const clickerHandler = require('./handlers/clicker');
-const gameBridgeHandler = require('./handlers/game-bridge');
 const friendsHandler = require('./handlers/friends');
 const dmsHandler = require('./handlers/dms');
-const gameLieroHandler = require('./handlers/game-liero');
 const videoRouletteHandler = require('./handlers/video-roulette');
 const updateWarningHandler = require('./handlers/update-warning');
 const disconnectHandler = require('./handlers/disconnect');
-const challengesHandler = require('./handlers/challenges');
 let reportHandler; try { reportHandler = require('./handlers/report'); } catch(e) {}
 let bugReportHandler; try { bugReportHandler = require('./handlers/bugreport'); } catch(e) {}
 let featureRequestHandler; try { featureRequestHandler = require('./handlers/featurerequest'); } catch(e) {}
@@ -69,26 +50,6 @@ function enrichRoom(serialized) {
   }
   return serialized;
 }
-
-/** @type {import('./game').Game|null} */
-let _game = null;
-/** @type {import('./cardgames').LobbyManager|null} */
-let _lobbyMgr = null;
-/** @type {CoinFlipManager|null} */
-let _coinFlipMgr = null;
-/** @type {Object|null} */
-let _lieroMgr = null;
-let _horseRacingMgr = null;
-/** @type {tcg.TCGBattleManager|null} */
-let _tcgBattleMgr = new tcg.TCGBattleManager();
-/** @type {tcg.TCGTradeManager|null} */
-let _tcgTradeMgr = new tcg.TCGTradeManager();
-/** @type {tcg.TCGTableManager|null} */
-let _tcgTableMgr = new tcg.TCGTableManager();
-/** @type {StockMarket} */
-const _stockMarket = new StockMarket();
-/** @type {AuctionHouse} */
-const _auctionHouse = new AuctionHouse();
 
 // Track account keys linked to sockets: Map<socketId, accountKey>
 const socketAccountMap = new Map();
@@ -142,30 +103,10 @@ function findChannelByName(room, name) {
 /**
  * Wire up all Socket.IO event handlers.
  * @param {import('socket.io').Server} io
- * @param {import('./game').Game} game
- * @param {import('./cardgames').LobbyManager} lobbyManager
  */
-function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, lieroManager, horseRacingManager) {
-  _game = game;
-  _lobbyMgr = lobbyManager;
-  _coinFlipMgr = coinFlipManager || new CoinFlipManager();
-  _lieroMgr = lieroManager || null;
-  _horseRacingMgr = horseRacingManager || null;
-  const _serverUtils = serverUtils || {};
+function setupSocket(io) {
   // Pass moderator keys to cords module for public cord tagging
   cords.setModeratorKeys(MODERATORS);
-  // Start stock market ticker — broadcast to subscribers
-  _stockMarket.onTick = function(marketState) {
-    if (io.sockets.adapter.rooms.get('stock_market')?.size > 0) {
-      io.to('stock_market').emit('stock_market_tick', marketState);
-    }
-  };
-  _stockMarket.onEvent = function(event) {
-    if (io.sockets.adapter.rooms.get('stock_market')?.size > 0) {
-      io.to('stock_market').emit('stock_market_event', event);
-    }
-  };
-  _stockMarket.start();
 
   // Cleanup expired accounts every 6 hours
   setInterval(function() {
@@ -176,22 +117,6 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
 
   // Run background re-encryption once on startup (delayed 60s)
   setTimeout(function() { accounts.reencryptAccounts(); }, 60000);
-
-  // Cleanup expired auction listings every 5 minutes
-  setInterval(function() {
-    const expired = _auctionHouse.cleanupExpired();
-    if (expired.length > 0) {
-      // Return items to sellers (preserve modifier/serial/rolledStats/shiny)
-      for (const listing of expired) {
-        if (listing.itemType === 'item') {
-          accounts.addInventoryItem(listing.sellerKey, { instanceId: crypto.randomBytes(6).toString('hex'), itemId: listing.itemInfo.id, modifier: listing.itemInfo.modifier || null, serial: listing.itemInfo.serial || null, obtainedAt: Date.now(), source: 'auction_expired' });
-        } else if (listing.itemType === 'card') {
-          accounts.addCard(listing.sellerKey, { instanceId: crypto.randomBytes(6).toString('hex'), cardId: listing.itemInfo.id, rolledStats: listing.itemInfo.rolledStats || null, shiny: listing.itemInfo.shiny || false, obtainedAt: Date.now(), source: 'auction_expired' });
-        }
-      }
-      io.emit('auction_listings_updated');
-    }
-  }, 5 * 60 * 1000);
 
   // Broadcast server stats to all clients every 30 seconds
   setInterval(function() {
@@ -366,8 +291,8 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
         linkedAccount = tempAccount;
       }
       // Assign a random character portrait image for anonymous users
-      if (loot.PROFILE_PORTRAITS && loot.PROFILE_PORTRAITS.length > 0) {
-        var randomPortrait = loot.PROFILE_PORTRAITS[Math.floor(Math.random() * loot.PROFILE_PORTRAITS.length)];
+      if (portraits.PROFILE_PORTRAITS && portraits.PROFILE_PORTRAITS.length > 0) {
+        var randomPortrait = portraits.PROFILE_PORTRAITS[Math.floor(Math.random() * portraits.PROFILE_PORTRAITS.length)];
         user.avatar = randomPortrait.img || null;
         // Also save to the temp account so profile_get returns it
         if (linkedAccount && user.avatar) {
@@ -402,7 +327,6 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
       account: linkedAccount ? {
         key: undefined, // Security: don't echo account key back over wire
         temp: !!linkedAccount.temp,
-        chips: linkedAccount.chips,
         stats: linkedAccount.stats,
         createdAt: linkedAccount.createdAt,
         slurFilter: !!linkedAccount.slurFilter,
@@ -450,20 +374,6 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
     // Build deps object for handler modules
     // ------------------------------------------------------------------
 
-    // Bound helper wrappers that close over socketAccountMap and accounts
-    function _boundSaveChipsForSocket(socketId, chips) {
-      saveChipsForSocket(socketAccountMap, accounts, socketId, chips);
-    }
-    function _boundSaveAllLobbyChips(lobby) {
-      saveAllLobbyChips(socketAccountMap, accounts, lobby);
-    }
-    function _boundEnrichInventory(key) {
-      return enrichInventory(accounts, loot, key);
-    }
-    function _boundProcessPokerBots(io, lobbyMgr, lobbyId) {
-      processPokerBots(io, lobbyMgr, lobbyId, socketAccountMap, accounts);
-    }
-
     const deps = {
       user: user,
       socketAccountMap: socketAccountMap,
@@ -474,35 +384,17 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
       filter: filter,
       ratelimit: ratelimit,
       pow: pow,
-      loot: loot,
-      tcg: tcg,
-      plinko: plinko,
-      game: _game,
-      lobbyManager: _lobbyMgr,
-      coinFlipManager: _coinFlipMgr,
-      tcgBattleManager: _tcgBattleMgr,
-      tcgTradeManager: _tcgTradeMgr,
-      tcgTableManager: _tcgTableMgr,
-      stockMarket: _stockMarket,
-      auctionHouse: _auctionHouse,
-      lieroManager: _lieroMgr,
       checkEventRate: checkEventRate,
       sanitizeText: sanitizeText,
       validateUrl: validateUrl,
       isModerator: isModerator,
       enrichRoom: enrichRoom,
-      enrichInventory: _boundEnrichInventory,
       findChannelByName: findChannelByName,
-      processPokerBots: _boundProcessPokerBots,
-      saveChipsForSocket: _boundSaveChipsForSocket,
-      saveAllLobbyChips: _boundSaveAllLobbyChips,
       MODERATORS: MODERATORS,
-      CoinFlipConstants: { CHIP_REWARD: CHIP_REWARD, MIN_BET: MIN_BET, CF_MAX_BET: CF_MAX_BET, COUNTDOWN_MS: COUNTDOWN_MS, RESULT_DISPLAY_MS: RESULT_DISPLAY_MS },
       cordViewDedup: cordViewDedup,
       CORD_VIEW_DEDUP_MS: CORD_VIEW_DEDUP_MS,
       _removeFromIpTracking: _removeFromIpTracking,
       sessionTokens: sessionTokens,
-      challengesHandler: challengesHandler,
     };
 
     // ------------------------------------------------------------------
@@ -512,28 +404,14 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
     chatHandler.init(io, socket, deps);
     channelsHandler.init(io, socket, deps);
     voiceHandler.init(io, socket, deps);
-    gameOrbsHandler.init(io, socket, deps);
-    gameCardsHandler.init(io, socket, deps);
-    gameSlotsHandler.init(io, socket, deps);
-    gamePlinkoHandler.init(io, socket, deps);
-    gameCoinflipHandler.init(io, socket, deps);
-    gameScratchHandler.init(io, socket, deps);
-    gameLootboxHandler.init(io, socket, deps);
-    inventoryHandler.init(io, socket, deps);
-    tcgHandler.init(io, socket, deps);
-    stocksHandler.init(io, socket, deps);
-    auctionHandler.init(io, socket, deps);
     accountsHandler.init(io, socket, deps);
+    profileHandler.init(io, socket, deps);
     cordsEventsHandler.init(io, socket, deps);
     moderationHandler.init(io, socket, deps);
     updateWarningHandler.init(io, socket, deps);
-    clickerHandler.init(io, socket, deps);
-    gameBridgeHandler.init(io, socket, deps);
-    gameLieroHandler.init(io, socket, deps);
     videoRouletteHandler.init(io, socket, deps);
     friendsHandler.init(io, socket, deps);
     dmsHandler.init(io, socket, deps);
-    challengesHandler.init(io, socket, deps);
     disconnectHandler.init(io, socket, deps);
     if (reportHandler) reportHandler.init(io, socket, deps);
     if (bugReportHandler) bugReportHandler.init(io, socket, deps);
@@ -553,121 +431,5 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
   });
 }
 
-// ---------------------------------------------------------------------------
-// Cross-namespace chip update broadcaster
-// When a game on /games or /market changes chips, also notify the default ns
-// ---------------------------------------------------------------------------
-function broadcastChipsUpdate(io, accountKey, newChips, reason) {
-  for (const [sid, key] of socketAccountMap) {
-    if (key === accountKey) {
-      const s = io.sockets.sockets.get(sid);
-      if (s) s.emit('chips_updated', { chips: newChips, reason: reason });
-    }
-  }
-}
+module.exports = { setupSocket, socketAccountMap, MODERATORS, sessionTokens };
 
-// ---------------------------------------------------------------------------
-// Namespace deps factory — builds a deps object for any socket + accountKey
-// Used by /games and /market namespace handlers so they share the same state
-// ---------------------------------------------------------------------------
-function createDepsFactory(io, game, lobbyManager, coinFlipManager, lieroManager, horseRacingManager, chessManager, poolManager) {
-  return function depsFactory(socket, accountKey) {
-    // Validate account
-    const linkedAccount = accounts.loadAccount(accountKey);
-    if (!linkedAccount) return null;
-
-    // Look up user from state (the default namespace creates users)
-    // For namespace sockets, find the user by their account key in socketAccountMap
-    let user = null;
-    for (const [sid, key] of socketAccountMap) {
-      if (key === accountKey) {
-        user = state.users.get(sid);
-        if (user) break;
-      }
-    }
-    // Fallback: create a minimal user object for the namespace socket
-    if (!user) {
-      user = {
-        id: socket.id,
-        name: linkedAccount.username || 'User',
-        color: linkedAccount.color || '#dcddde',
-        tag: state.generateTag ? state.generateTag(accountKey) : '',
-        avatar: linkedAccount.avatar || null,
-        joinedAt: Date.now(),
-        roomIds: new Set(),
-      };
-    }
-
-    // Map this namespace socket to the account key
-    // (namespace sockets have separate IDs from the default namespace)
-    socketAccountMap.set(socket.id, accountKey);
-
-    // Clean up on disconnect
-    socket.on('disconnect', function() {
-      socketAccountMap.delete(socket.id);
-    });
-
-    // Bound helper wrappers
-    function _boundSaveChipsForSocket(socketId, chips) {
-      saveChipsForSocket(socketAccountMap, accounts, socketId, chips);
-    }
-    function _boundSaveAllLobbyChips(lobby) {
-      saveAllLobbyChips(socketAccountMap, accounts, lobby);
-    }
-    function _boundEnrichInventory(key) {
-      return enrichInventory(accounts, loot, key);
-    }
-    function _boundProcessPokerBots(nsOrIo, lobbyMgr, lobbyId) {
-      processPokerBots(nsOrIo, lobbyMgr, lobbyId, socketAccountMap, accounts);
-    }
-    function _boundBroadcastChipsUpdate(accKey, newChips, reason) {
-      broadcastChipsUpdate(io, accKey, newChips, reason);
-    }
-
-    return {
-      user: user,
-      socketAccountMap: socketAccountMap,
-      ipConnections: ipConnections,
-      accounts: accounts,
-      state: state,
-      cords: cords,
-      filter: filter,
-      ratelimit: ratelimit,
-      pow: pow,
-      loot: loot,
-      tcg: tcg,
-      plinko: plinko,
-      game: game,
-      lobbyManager: lobbyManager,
-      coinFlipManager: coinFlipManager,
-      tcgBattleManager: _tcgBattleMgr,
-      tcgTradeManager: _tcgTradeMgr,
-      tcgTableManager: _tcgTableMgr,
-      stockMarket: _stockMarket,
-      auctionHouse: _auctionHouse,
-      lieroManager: lieroManager || _lieroMgr,
-      horseRacingManager: horseRacingManager || _horseRacingMgr,
-      chessManager: chessManager || null,
-      poolManager: poolManager || null,
-      checkEventRate: checkEventRate,
-      sanitizeText: sanitizeText,
-      validateUrl: validateUrl,
-      isModerator: isModerator,
-      enrichRoom: enrichRoom,
-      enrichInventory: _boundEnrichInventory,
-      findChannelByName: findChannelByName,
-      processPokerBots: _boundProcessPokerBots,
-      saveChipsForSocket: _boundSaveChipsForSocket,
-      saveAllLobbyChips: _boundSaveAllLobbyChips,
-      broadcastChipsUpdate: _boundBroadcastChipsUpdate,
-      MODERATORS: MODERATORS,
-      CoinFlipConstants: { CHIP_REWARD: CHIP_REWARD, MIN_BET: MIN_BET, CF_MAX_BET: CF_MAX_BET, COUNTDOWN_MS: COUNTDOWN_MS, RESULT_DISPLAY_MS: RESULT_DISPLAY_MS },
-      cordViewDedup: cordViewDedup,
-      CORD_VIEW_DEDUP_MS: CORD_VIEW_DEDUP_MS,
-      _removeFromIpTracking: function() {}, // no-op for namespace sockets (IP tracked on main ns only)
-      challengesHandler: challengesHandler,
-    };
-  };
-}
-
-module.exports = { setupSocket, socketAccountMap, MODERATORS, createDepsFactory, _stockMarket, _auctionHouse, sessionTokens };

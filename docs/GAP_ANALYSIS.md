@@ -1,9 +1,10 @@
 # BossCord — Gap Analysis vs. Discord / Chat-Platform Staples
 
-_Date: 2026-07-02. Basis: 107 server+client JS files syntax-clean, chess timer
-tests pass, server smoke-boots clean (encryption on, graceful TLS degradation),
-socket contract cross-checked both directions. Every "missing" claim below was
-keyword-verified against handlers/, public/js/, and state.js._
+_Originally 2026-07-02 for `main`. Revised 2026-07-29 for the `social-only`
+branch, where the mini-game arcade and chip economy were removed. Basis: every
+tracked JS file syntax-clean, `_test_social.js` passes 9/9, server smoke-boots
+clean (encryption on, graceful TLS degradation). Arcade-specific gaps from the
+original analysis are out of scope here and live on `main`._
 
 ## What BossCord already has (do not rebuild)
 
@@ -12,10 +13,8 @@ PIN + session tokens, encrypted account persistence with key rotation tooling,
 daily UTC wipe, reactions (whitelisted emoji), pins (pin/unpin/get handlers),
 typing indicators, DMs with client crypto, friends, profanity filter,
 per-IP/socket rate limiting, moderation + report forwarding (mTLS), cords
-social feed, PWA manifest, video roulette, and a full mini-game arcade:
-chess (timed), TCG with packs/battles/tables, horse racing, pool, liero,
-plinko, coinflip, stocks, auction house, clicker economy, loot/keys/scratch
-cards, daily challenges. mTLS deploy pipeline to KVM.
+social feed, PWA manifest, video roulette, and profile avatars (portrait
+picker). No games, chips, inventory, or leaderboards on this branch.
 
 ---
 
@@ -53,48 +52,54 @@ the wipe, webhooks/bots API, read receipts.
 
 ---
 
-## B. Dormant feature: TCG trading & challenges — built server-side, no UI
+## B. Branch-specific: dangling events after the arcade removal
 
-`tcg.js` implements the full trade flow (`tcg_trade_proposed/received/
-completed/declined/cancelled`) and direct battle challenges (`tcg_challenge_
-sent/received/declined`) — and the client never emits a single request nor
-registers a single listener for any of them. A complete feature is sitting
-dark. Wiring the UI (propose from profile/card view, accept dialog) ships a
-"new feature" with zero server work. Same pattern, smaller: `hr_bet_cancelled`,
-`friend_requests_list`, `showcase_updated` acks have no client listeners —
-sweep and either surface or drop them.
+The arcade came out cleanly (no requires of removed modules, no game handlers
+left, `_test_social.js` asserts both). Two loose ends remain, neither breaking:
 
-## C. Arcade/economy gaps (platform ideas from the genre)
+- `accounts.js` still persists `chips`, `inventory`, `cards`, `stats.gamesPlayed`
+  and friends on account records. Left deliberately so an account file stays
+  loadable on either branch; nothing on this branch reads or writes them. If
+  `social-only` ever becomes the trunk, that is dead weight to strip.
+- Acks with no client listener predate the split and still want a sweep:
+  `friend_requests_list`, `showcase_updated`. Surface or drop.
 
-- **Leaderboards + seasons:** stocks/clicker/races accumulate chips but nothing
-  ranks players; a daily-wipe platform is *made* for daily leaderboards
-  (challenges.js already tracks per-day counters).
-- **Spectate links:** horse racing has spectator updates; chess/pool/liero
-  don't. Shareable spectate = organic room traffic.
-- **Tournaments:** chess has timed lobbies; a bracket wrapper over existing
-  lobbies (auto-advance winners) is mostly UI + a scheduler.
+## C. Social gaps worth building here
+
+- **Profile depth:** the profile is now identity + message counts. Bio/status
+  text and a "member since" badge are cheap and make the social side feel less
+  thin without reintroducing an economy.
+- **Room discovery:** public rooms list is flat. Categories exist in the create
+  form (`General/Gaming/Music/Art/Tech`) but there is no browse-by-category or
+  activity sort.
+- **Cords engagement:** likes and replies exist; no follow/subscribe, no "my
+  cords" view. A per-user cord history (within the 48h TTL) is a small add.
+
 
 ## D. Engineering gaps
 
-### D1. No test suite — the biggest risk
-One ad-hoc chess timer script (`_test_timer.js`, passes) for a live deployed
-platform with an economy. Chip mutations (loot, auction, stocks, coinflip)
-are exactly where silent bugs cost trust. Port the MMOLite pattern: jest +
-source-contract tests + an event-contracts test (this analysis found the TCG
-gap by hand; the ratchet test would keep it found). Note: an emit/listen
-sweep here must account for indirect broadcast fns (`_broadcastFn` in
-horseracing.js) — naive regex flags false positives.
+### D1. Thin test suite — still the biggest risk
+One smoke script (`_test_social.js`, 9/9) covering the API surface, the
+index.html script manifest, and the absence of removed game modules. That
+catches a broken build, not broken behaviour. The paths that matter most here
+are auth (PoW + PIN + session tokens), DM crypto, and the moderation gates.
+Port the MMOLite pattern: jest + source-contract tests + an event-contracts
+test so a client listener with no server emitter (or the reverse) fails CI.
+
 
 ### D2. No CI
 Repo is now on GitHub — add a workflow running syntax check + tests on push.
 
-### D3. `_test_timer.js` placement
-Move to `tests/` as the seed of the suite.
+### D3. Test file placement
+`_test_social.js` sits at the repo root like `_test_timer.js` did on `main`
+(that chess-timer script was removed here with the games). Move it to `tests/`
+as the seed of the suite.
 
 ## Suggested sequencing
 
-1. **B TCG trade UI** (server done, pure client work) + **D1 test seed + D2 CI**
+1. **D1 test seed + D2 CI** — nothing else is safe to move fast on without it
 2. **A1 edit/delete + A3 replies** — core chat feel
 3. **A2 attachments** (ephemeral-friendly design above)
-4. **C leaderboards** — leans on daily wipe identity
-5. **A5 push notifications → A4 search → C tournaments**
+4. **C social gaps** — profile depth, room discovery, cords history
+5. **A5 push notifications → A4 search**
+

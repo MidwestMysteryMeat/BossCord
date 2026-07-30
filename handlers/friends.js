@@ -1,7 +1,7 @@
 // handlers/friends.js
 // Socket handlers: friends_list_get, friend_requests_get, friend_request_send,
 //                  friend_request_accept, friend_request_reject, friend_remove,
-//                  friend_block, friend_unblock, friend_invite_game
+//                  friend_block, friend_unblock
 
 module.exports = {
   init(io, socket, deps) {
@@ -267,52 +267,6 @@ module.exports = {
         socket.emit('friends_list', myData);
       } catch (err) {
         console.error('[friend_block_by_tag] Error:', err.message);
-      }
-    });
-
-    socket.on('friend_invite_game', (data) => {
-      try {
-        if (!data || typeof data.targetKey !== 'string' || typeof data.gameType !== 'string') return;
-        var key = socketAccountMap.get(socket.id);
-        if (!key || accounts.isTempAccount(key)) return;
-        if (!checkEventRate(socket, 'friend_invite', 10, 60000)) return;
-
-        // Verify friendship
-        var myAcc = accounts.loadAccount(key);
-        if (!myAcc) return;
-        var isFriend = (myAcc.friends || []).some(function(f) { return f.key === data.targetKey; });
-        if (!isFriend) {
-          socket.emit('error', { message: 'Not on your friends list' });
-          return;
-        }
-
-        // Find target socket
-        for (var [sid, skey] of socketAccountMap) {
-          if (skey === data.targetKey) {
-            var targetSocket = io.sockets.sockets.get(sid);
-            if (targetSocket) {
-              // If this is a TCG table invite, also emit the tcg_table_invite event
-              if (data.gameType === 'tcg' && data.lobbyId) {
-                targetSocket.emit('tcg_table_invite', {
-                  tableId: data.lobbyId,
-                  fromName: myAcc.username,
-                  fromColor: myAcc.color || '#dcddde',
-                  tableName: (myAcc.username || 'Anon') + "'s Table",
-                });
-              }
-              targetSocket.emit('game_invite', {
-                fromKey: key,
-                fromUsername: myAcc.username,
-                gameType: data.gameType,
-                lobbyId: data.lobbyId || null,
-              });
-              socket.emit('friend_invite_sent');
-            }
-            break;
-          }
-        }
-      } catch (err) {
-        console.error('[friend_invite_game] Error:', err.message);
       }
     });
   }

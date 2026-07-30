@@ -219,11 +219,9 @@ function TopTabBar({ activeTab, onTabChange, compact }) {
   var tabs = [
     { id: 'chat', label: 'Chat', icon: '#' },
     { id: 'cords', label: 'Cords', icon: '\uD83D\uDCAC' },
-    { id: 'games', label: 'Game', icon: '\uD83C\uDFAE' },
     { id: 'friends', label: 'Friends', icon: '\uD83D\uDC65' },
     { id: 'dms', label: 'DMs', icon: '\uD83D\uDD12' },
     { id: 'roulette', label: 'Roulette', icon: '\uD83C\uDFB2' },
-    { id: 'leaderboard', label: 'Top', icon: '\uD83C\uDFC6' },
     { id: 'profile', label: 'Profile', icon: '\uD83D\uDC64' },
     { id: 'about', label: 'About', icon: '\u2139\uFE0F' }
   ];
@@ -283,11 +281,9 @@ function TopTabBar({ activeTab, onTabChange, compact }) {
       var tabs = [
         { id: 'chat', label: 'Chat', icon: '#' },
         { id: 'cords', label: 'Cords', icon: '\uD83D\uDCAC' },
-        { id: 'games', label: 'Game', icon: '\uD83C\uDFAE' },
         { id: 'friends', label: 'Friends', icon: '\uD83D\uDC65' },
         { id: 'dms', label: 'DMs', icon: '\uD83D\uDD12' },
         { id: 'roulette', label: 'Roulette', icon: '\uD83C\uDFB2' },
-        { id: 'leaderboard', label: 'Top', icon: '\uD83C\uDFC6' },
         { id: 'profile', label: 'Profile', icon: '\uD83D\uDC64' },
         { id: 'about', label: 'About', icon: '\u2139\uFE0F' }
       ];
@@ -771,7 +767,6 @@ function UserActionMenu(props) {
   // Profile card header section with accent banner and centered avatar
   function renderProfileHeader() {
     var accountAge = (profile && profile.accountAge) || 'Guest';
-    var chips = profile ? profile.chips : null;
 
     return React.createElement('div', null,
       // Accent banner bar at top of card
@@ -835,15 +830,6 @@ function UserActionMenu(props) {
             accountAge
           ),
           // Chips balance (only show if available)
-          chips !== null && chips !== undefined ? React.createElement('div', {
-            style: {
-              fontSize: '13px', color: '#f0b232', fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: '6px',
-            }
-          },
-            React.createElement('span', { style: { fontSize: '14px', width: '16px', textAlign: 'center' } }, '\u2B50'),
-            chips.toLocaleString() + ' chips'
-          ) : null
         )
       )
     );
@@ -1019,11 +1005,9 @@ function QuickSwitcher(props) {
     var tabList = [
       { id: 'chat', label: 'Chat', icon: '#' },
       { id: 'cords', label: 'Cords', icon: '\uD83D\uDCAC' },
-      { id: 'games', label: 'Games', icon: '\uD83C\uDFAE' },
       { id: 'friends', label: 'Friends', icon: '\uD83D\uDC65' },
       { id: 'dms', label: 'DMs', icon: '\uD83D\uDD12' },
       { id: 'roulette', label: 'Roulette', icon: '\uD83C\uDFB2' },
-      { id: 'leaderboard', label: 'Leaderboard', icon: '\uD83C\uDFC6' },
       { id: 'profile', label: 'Profile', icon: '\uD83D\uDC64' },
       { id: 'about', label: 'About', icon: '\u2139\uFE0F' }
     ];

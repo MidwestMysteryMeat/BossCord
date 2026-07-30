@@ -1,6 +1,6 @@
 // handlers/accounts.js
 // Socket handlers: account_create, account_profile, account_delete,
-//                  toggle_slur_filter, leaderboard_get,
+//                  toggle_slur_filter,
 //                  gif_favorites_get, gif_favorite_add, gif_favorite_remove,
 //                  get_user_profile
 
@@ -64,7 +64,6 @@ module.exports = {
         await accounts.setPinForAccount(account.key, pin);
         socket.emit('account_created', {
           key: account.key,
-          chips: account.chips,
           stats: account.stats,
           createdAt: account.createdAt,
         });
@@ -171,7 +170,6 @@ module.exports = {
           temp: !!account.temp,
           username: account.username,
           color: account.color,
-          chips: account.chips,
           stats: account.stats,
           createdAt: account.createdAt,
           slurFilter: !!account.slurFilter,
@@ -241,20 +239,6 @@ module.exports = {
         console.error('[toggle_slur_filter] Error:', err.message);
       }
     });
-
-    // ------------------------------------------------------------------
-    // Leaderboard
-    // ------------------------------------------------------------------
-    socket.on('leaderboard_get', () => {
-      try {
-        if (!checkEventRate(socket, 'leaderboard_get', 10, 60000)) return;
-        const board = accounts.getLeaderboard(50);
-        socket.emit('leaderboard_data', { leaderboard: board });
-      } catch (err) {
-        console.error('[leaderboard_get] Error:', err.message);
-      }
-    });
-
     // ------------------------------------------------------------------
     // GIF Favorites: get
     // ------------------------------------------------------------------
@@ -328,7 +312,6 @@ module.exports = {
           var acc = accounts.loadAccount(targetKey);
           if (acc) {
             var stats = acc.stats || {};
-            var cards = acc.cards || [];
             var createdAt = acc.createdAt || Date.now();
             var now = Date.now();
             var ageDays = Math.floor((now - createdAt) / (24 * 60 * 60 * 1000));
@@ -345,12 +328,8 @@ module.exports = {
               username: acc.username,
               tag: fullTag,
               color: acc.color || '#f0b232',
-              chips: acc.chips || 0,
               accountAge: ageText,
-              gamesPlayed: stats.gamesPlayed || 0,
-              gamesWon: stats.wins || 0,
               totalMessages: stats.messagesPosted || 0,
-              tcgCardsOwned: cards.length,
               achievements: [],
             });
             return;
@@ -366,12 +345,8 @@ module.exports = {
               username: u.name,
               tag: fullTag,
               color: u.color || '#dcddde',
-              chips: null,
               accountAge: 'Guest',
-              gamesPlayed: 0,
-              gamesWon: 0,
               totalMessages: 0,
-              tcgCardsOwned: 0,
               achievements: [],
             });
             found = true;
@@ -385,12 +360,8 @@ module.exports = {
             username: tagName,
             tag: fullTag,
             color: '#dcddde',
-            chips: null,
             accountAge: 'Unknown',
-            gamesPlayed: 0,
-            gamesWon: 0,
             totalMessages: 0,
-            tcgCardsOwned: 0,
             achievements: [],
           });
         }
