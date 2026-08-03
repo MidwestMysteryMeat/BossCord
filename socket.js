@@ -93,6 +93,51 @@ const _auctionHouse = new AuctionHouse();
 // Track account keys linked to sockets: Map<socketId, accountKey>
 const socketAccountMap = new Map();
 
+// Failed PIN attempts per ACCOUNT, independent of source IP.
+// The account key travels to other clients (friends/DM/invite payloads), so it
+// must not be treated as a secret: an attacker holding a key needs only the
+// PIN. Throttling failures per IP alone is defeated by rotating addresses, so
+// the account itself locks out after repeated failures no matter who is asking.
+// Map<accountKey, { count, first, lockUntil }>
+const pinFailures = new Map();
+const PIN_FAIL_MAX = 10; // failures allowed inside the window
+const PIN_FAIL_WINDOW_MS = 15 * 60 * 1000;
+const PIN_LOCK_MS = 15 * 60 * 1000;
+
+/** true when this account is currently locked out of PIN attempts. */
+function pinLockedOut(accountKey) {
+  const rec = pinFailures.get(accountKey);
+  return !!(rec && rec.lockUntil > Date.now());
+}
+
+/** Record a failed PIN attempt; locks the account once over the limit. */
+function notePinFailure(accountKey) {
+  const now = Date.now();
+  let rec = pinFailures.get(accountKey);
+  if (!rec || now - rec.first > PIN_FAIL_WINDOW_MS) {
+    rec = { count: 0, first: now, lockUntil: 0 };
+    pinFailures.set(accountKey, rec);
+  }
+  rec.count++;
+  if (rec.count >= PIN_FAIL_MAX) {
+    rec.lockUntil = now + PIN_LOCK_MS;
+    rec.count = 0;
+    rec.first = now;
+    console.warn('[auth] PIN lockout for account ' + String(accountKey).slice(0, 4) + '...');
+  }
+  // Bound the map: drop entries that are neither locked nor in a live window.
+  if (pinFailures.size > 5000) {
+    for (const [k, v] of pinFailures) {
+      if (v.lockUntil <= now && now - v.first > PIN_FAIL_WINDOW_MS) pinFailures.delete(k);
+    }
+  }
+}
+
+/** Clear the failure record after a successful PIN. */
+function clearPinFailures(accountKey) {
+  pinFailures.delete(accountKey);
+}
+
 // Session tokens: issued after full auth (PoW + PIN) on default namespace.
 // Namespace connections (/games, /market) must present a valid session token
 // instead of a raw accountKey. This prevents stolen keys from bypassing PIN/PoW.
@@ -293,8 +338,18 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
         var authPin = socket.handshake.auth && socket.handshake.auth.pin;
 
         if (linkedAccount.pinHash) {
+          // Locked out on this ACCOUNT: refuse before spending a scrypt, and
+          // regardless of which address is asking.
+          if (pinLockedOut(linkedAccount.key)) {
+            ratelimit.decrementConnections();
+            _removeFromIpTracking();
+            socket.emit('error', { message: 'Too many failed PIN attempts for this account. Try again in 15 minutes.' });
+            socket.disconnect(true);
+            return;
+          }
           // Account has PIN set — verify it (async scrypt to avoid blocking event loop)
           if (!authPin || !(await accounts.verifyPin(authPin, linkedAccount.pinHash))) {
+            notePinFailure(linkedAccount.key);
             if (!ratelimit.check(clientIp, 'auth_fail', 5, 900000)) {
               ratelimit.decrementConnections();
               _removeFromIpTracking();
@@ -308,6 +363,9 @@ function setupSocket(io, game, lobbyManager, serverUtils, coinFlipManager, liero
             socket.disconnect(true);
             return;
           }
+          // Correct PIN: forget the failure history so a legitimate owner is
+          // never locked out by someone else guessing at their account.
+          clearPinFailures(linkedAccount.key);
         } else {
           // Account has NO PIN — require one to be set during login
           if (!authPin || typeof authPin !== 'string' || authPin.length < 4 || authPin.length > 8 || !/^[a-zA-Z0-9]+$/.test(authPin)) {

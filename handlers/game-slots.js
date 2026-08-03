@@ -233,14 +233,16 @@ module.exports = {
     // Spin
     // ------------------------------------------------------------------
     socket.on('slot_spin', (data) => {
+      // Acquire OUTSIDE the try: a rejected concurrent spin must not run the
+      // finally below and release the lock the in-flight spin still holds.
+      if (spinInProgress) { socket.emit('error', { message: 'Spin in progress' }); return; }
+      spinInProgress = true;
       try {
-        if (spinInProgress) { socket.emit('error', { message: 'Spin in progress' }); return; }
-        spinInProgress = true;
-        if (!data || typeof data.bet !== 'number') { spinInProgress = false; return; }
+        if (!data || typeof data.bet !== 'number') return;
         const key = socketAccountMap.get(socket.id);
-        if (!key) { spinInProgress = false; socket.emit('error', { message: 'Need an account to play slots' }); return; }
-        if (!checkEventRate(socket, 'slot_spin', 60, 60000)) { spinInProgress = false; return; }
-        if (!isFinite(data.bet) || data.bet < 1) { spinInProgress = false; return; }
+        if (!key) { socket.emit('error', { message: 'Need an account to play slots' }); return; }
+        if (!checkEventRate(socket, 'slot_spin', 60, 60000)) return;
+        if (!isFinite(data.bet) || data.bet < 1) return;
 
         // Load upgrades
         var upgrades = accounts.getSlotUpgrades(key);
@@ -329,10 +331,14 @@ module.exports = {
             challengesHandler.checkAchievement(accounts, key, 'jackpot');
           }
         }
-        spinInProgress = false;
       } catch (err) {
-        spinInProgress = false;
         console.error('[slot_spin] Error:', err.message);
+      } finally {
+        // Every exit path releases the lock. Two early returns ("Not enough
+        // chips", "Account error") used to skip the reset, so the first time
+        // a player bet over their balance the lock stuck for the life of the
+        // connection and every later spin was refused "Spin in progress".
+        spinInProgress = false;
       }
     });
   }
